@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Faculty Event Management System</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5; color: #1a1a1a; font-size: 14px;
+        }
+
+        /* LOGIN */
+        .login-wrapper {
+            min-height: 100vh; display: flex;
+            align-items: center; justify-content: center;
+        }
+        .login-card {
+            background: #fff; border: 1px solid #e5e5e5;
+            border-radius: 12px; padding: 36px 32px;
+            width: 100%; max-width: 380px;
+        }
+        .login-title { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+        .login-sub { font-size: 13px; color: #888; margin-bottom: 24px; }
+        .login-error {
+            background: #fff0f0; border: 1px solid #f5c6c6;
+            color: #c0392b; font-size: 13px; padding: 10px 14px;
+            border-radius: 7px; margin-bottom: 16px; display: none;
+        }
+
+        /* NAV */
+        .nav {
+            background: #fff; border-bottom: 1px solid #e5e5e5;
+            padding: 0 24px; display: flex; align-items: center;
+            justify-content: space-between; height: 56px;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .nav-brand { font-size: 15px; font-weight: 600; }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .nav-user {
+            font-size: 13px; color: #555;
+            background: #f5f5f5; padding: 5px 12px;
+            border-radius: 20px;
+        }
+        .nav-role {
+            font-size: 11px; font-weight: 600; padding: 3px 8px;
+            border-radius: 20px;
+        }
+        .role-ADMIN    { background: #fdf0f0; color: #c0392b; }
+        .role-STUDENT  { background: #e8f4fd; color: #1a6fa8; }
+        .role-LECTURER { background: #eafaf1; color: #1e8449; }
+        .nav-links { display: flex; gap: 4px; }
+        .nav-btn {
+            padding: 6px 14px; border: none; background: transparent;
+            border-radius: 6px; cursor: pointer; font-size: 13px;
+            color: #666; transition: background .15s;
+        }
+        .nav-btn:hover { background: #f0f0f0; }
+        .nav-btn.active { background: #f0f0f0; color: #1a1a1a; font-weight: 500; }
+
+        /* PAGES */
+        .app { display: none; }
+        .page { display: none; padding: 24px; max-width: 1100px; margin: 0 auto; }
+        .page.active { display: block; }
+
+        /* METRICS */
+        .metrics {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 12px; margin-bottom: 24px;
+        }
+        .metric-card {
+            background: #fff; border: 1px solid #e5e5e5;
+            border-radius: 10px; padding: 16px;
+        }
+        .metric-label { font-size: 12px; color: #888; margin-bottom: 6px; }
+        .metric-value { font-size: 26px; font-weight: 600; }
+
+        /* SECTION HEADER */
+        .section-header {
+            display: flex; align-items: center;
+            justify-content: space-between; margin-bottom: 14px;
+        }
+        .section-title { font-size: 15px; font-weight: 600; }
+
+        /* BUTTONS */
+        .btn {
+            padding: 7px 16px; border-radius: 7px;
+            border: 1px solid #e0e0e0; background: #fff;
+            cursor: pointer; font-size: 13px; color: #1a1a1a;
+            transition: background .15s;
+        }
+        .btn:hover { background: #f5f5f5; }
+        .btn-primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+        .btn-primary:hover { background: #333; }
+        .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+        /* EVENTS */
+        .events-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+        .event-card {
+            background: #fff; border: 1px solid #e5e5e5;
+            border-radius: 10px; padding: 16px;
+        }
+        .event-card-top {
+            display: flex; justify-content: space-between;
+            align-items: flex-start; margin-bottom: 10px; gap: 8px;
+        }
+        .event-title { font-size: 14px; font-weight: 500; line-height: 1.4; }
+        .badge {
+            font-size: 11px; font-weight: 500; padding: 3px 8px;
+            border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+        }
+        .badge-UPCOMING  { background: #e8f4fd; color: #1a6fa8; }
+        .badge-ONGOING   { background: #eafaf1; color: #1e8449; }
+        .badge-COMPLETED { background: #f0f0f0; color: #555; }
+        .badge-CANCELLED { background: #fdf0f0; color: #c0392b; }
+        .event-meta { font-size: 12px; color: #888; margin-bottom: 3px; }
+        .progress-bar {
+            height: 4px; background: #f0f0f0;
+            border-radius: 2px; margin: 10px 0 5px;
+        }
+        .progress-fill { height: 4px; border-radius: 2px; background: #378ADD; }
+        .progress-label { font-size: 11px; color: #aaa; }
+
+        /* TABLE */
+        .table-card {
+            background: #fff; border: 1px solid #e5e5e5;
+            border-radius: 10px; overflow: hidden;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            padding: 10px 16px; text-align: left; font-size: 12px;
+            font-weight: 500; color: #888; background: #fafafa;
+            border-bottom: 1px solid #e5e5e5;
+        }
+        td { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #fafafa; }
+
+        /* FORM */
+        .form-card {
+            background: #fff; border: 1px solid #e5e5e5;
+            border-radius: 10px; padding: 24px; max-width: 580px;
+        }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .form-group { margin-bottom: 14px; }
+        .form-label { display: block; font-size: 12px; font-weight: 500; color: #555; margin-bottom: 5px; }
+        .form-input {
+            width: 100%; padding: 8px 12px; border: 1px solid #e0e0e0;
+            border-radius: 7px; font-size: 13px; color: #1a1a1a;
+            background: #fff; outline: none; transition: border .15s;
+        }
+        .form-input:focus { border-color: #1a1a1a; }
+        .form-actions { display: flex; gap: 10px; margin-top: 6px; }
+
+        /* USERS */
+        .users-list { display: flex; flex-direction: column; gap: 10px; }
+        .user-card {
+            background: #fff; border: 1px solid #e5e5e5;
+            border-radius: 10px; padding: 14px 16px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: #e8f4fd; color: #1a6fa8; display: flex;
+            align-items: center; justify-content: center;
+            font-weight: 600; font-size: 14px; flex-shrink: 0;
+        }
+
+        /* NOTIFICATIONS */
+        .notif-list { display: flex; flex-direction: column; gap: 10px; }
+        .notif-item {
+            display: flex; gap: 12px; background: #fff;
+            border: 1px solid #e5e5e5; border-radius: 10px;
+            padding: 14px 16px; align-items: flex-start;
+        }
+        .notif-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+        .notif-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+        .notif-desc { font-size: 12px; color: #888; }
+        .notif-time { font-size: 11px; color: #bbb; margin-top: 4px; }
+
+        /* MY REGISTRATIONS */
+        .reg-card {
+            background: #fff; border: 1px solid #e5e5e5;
+            border-radius: 10px; padding: 16px;
+            display: flex; align-items: center; gap: 14px;
+        }
+        .reg-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: #1e8449; flex-shrink: 0;
+        }
+
+        /* TOAST */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px;
+            background: #1a1a1a; color: #fff; padding: 12px 20px;
+            border-radius: 8px; font-size: 13px; opacity: 0;
+            transform: translateY(10px); transition: all .25s; z-index: 999;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.error { background: #c0392b; }
+
+        .empty { text-align: center; padding: 40px; color: #bbb; font-size: 13px; }
+        .admin-only { display: none; }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div class="login-wrapper" id="loginPage">
+    <div class="login-card">
+        <div class="login-title">Faculty Event System</div>
+        <div class="login-sub">Sign in to your account</div>
+        <div class="login-error" id="loginError"></div>
+        <div class="form-group">
+            <label class="form-label">Email address</label>
+            <input class="form-input" id="loginEmail" type="email"
+                   placeholder="e.g. kasun@faculty.edu"
+                   onkeydown="if(event.key==='Enter') doLogin()"/>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Password</label>
+            <input class="form-input" id="loginPassword" type="password"
+                   placeholder="Enter your password"
+                   onkeydown="if(event.key==='Enter') doLogin()"/>
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:4px"
+                onclick="doLogin()">Sign in</button>
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0f0f0">
+            <div style="font-size:12px;color:#aaa;margin-bottom:8px">Test accounts</div>
+            <div style="font-size:12px;color:#888;line-height:1.8">
+                Admin: admin@faculty.edu / admin123<br>
+                Student: kasun@faculty.edu / student123
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app" id="mainApp">
+
+    <!-- NAV -->
+    <nav class="nav">
+        <span class="nav-brand">Faculty Event System</span>
+        <div class="nav-links" id="navLinks"></div>
+        <div class="nav-right">
+            <span class="nav-role" id="navRole"></span>
+            <span class="nav-user" id="navUser"></span>
+            <button class="btn btn-sm" onclick="doLogout()">Sign out</button>
+        </div>
+    </nav>
+
+    <!-- DASHBOARD -->
+    <div class="page" id="dashboard">
+        <div class="metrics">
+            <div class="metric-card">
+                <div class="metric-label">Total events</div>
+                <div class="metric-value" id="totalEvents">–</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Upcoming</div>
+                <div class="metric-value" id="upcomingEvents">–</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Ongoing</div>
+                <div class="metric-value" id="ongoingEvents">–</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label" id="metric4Label">Total users</div>
+                <div class="metric-value" id="metric4Value">–</div>
+            </div>
+        </div>
+        <div class="section-header">
+            <span class="section-title">Recent events</span>
+        </div>
+        <div class="events-grid" id="dashboardEvents">
+            <div class="empty">Loading...</div>
+        </div>
+    </div>
+
+    <!-- EVENTS (admin manages, user views + registers) -->
+    <div class="page" id="events">
+        <div class="section-header">
+            <span class="section-title">Events</span>
+            <button class="btn btn-primary admin-only" id="newEventBtn"
+                    onclick="showPage('create')">+ New event</button>
+        </div>
+        <div class="table-card">
+            <table>
+                <thead>
+                <tr>
+                    <th>Title</th><th>Date</th><th>Location</th>
+                    <th>Attendees</th><th>Type</th><th>Status</th><th>Action</th>
+                </tr>
+                </thead>
+                <tbody id="eventsTableBody">
+                <tr><td colspan="7" class="empty">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- CREATE EVENT (admin only) -->
+    <div class="page" id="create">
+        <div class="section-header">
+            <span class="section-title">Create new event</span>
+        </div>
+        <div class="form-card">
+            <div class="form-group">
+                <label class="form-label">Event title</label>
+                <input class="form-input" id="eventTitle" placeholder="e.g. Annual Research Symposium"/>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-input" id="eventDesc" rows="3"
+                          placeholder="Describe the event..."></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Date & time</label>
+                    <input class="form-input" id="eventDate" type="datetime-local"/>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Location</label>
+                    <input class="form-input" id="eventLocation" placeholder="e.g. Auditorium A"/>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Max attendees</label>
+                    <input class="form-input" id="eventMax" type="number" placeholder="100"/>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Event type</label>
+                    <select class="form-input" id="eventType">
+                        <option value="ACADEMIC">Academic</option>
+                        <option value="CULTURAL">Cultural</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="submitCreateEvent()">Create event</button>
+                <button class="btn" onclick="clearForm()">Clear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MANAGE USERS (admin only) -->
+    <div class="page" id="manageUsers">
+        <div class="section-header">
+            <span class="section-title">Manage users</span>
+            <button class="btn btn-primary" onclick="toggleCreateUser()">+ Add user</button>
+        </div>
+        <div id="createUserForm" style="display:none;margin-bottom:20px">
+            <div class="form-card">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Full name</label>
+                        <input class="form-input" id="userName" placeholder="e.g. Kasun Perera"/>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input class="form-input" id="userEmail" placeholder="kasun@faculty.edu"/>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input class="form-input" id="userPhone" placeholder="0771234567"/>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input class="form-input" id="userPassword" type="password" placeholder="password"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Role</label>
+                    <select class="form-input" id="userRole">
+                        <option value="STUDENT">Student</option>
+                        <option value="LECTURER">Lecturer</option>
+                        <option value="ADMIN">Admin</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" onclick="createUser()">Add user</button>
+                    <button class="btn" onclick="toggleCreateUser()">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <div class="users-list" id="usersList">
+            <div class="empty">Loading...</div>
+        </div>
+    </div>
+
+    <!-- MY REGISTRATIONS (user only) -->
+    <div class="page" id="myRegistrations">
+        <div class="section-header">
+            <span class="section-title">My registrations</span>
+        </div>
+        <div id="myRegList" class="users-list">
+            <div class="empty">Loading...</div>
+        </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div class="page" id="notifications">
+        <div class="section-header">
+            <span class="section-title">Notifications</span>
+            <button class="btn" onclick="clearNotifs()">Clear all</button>
+        </div>
+        <div class="notif-list" id="notifList">
+            <div class="empty">No notifications yet.</div>
+        </div>
+    </div>
+
+</div><!-- end mainApp -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+    const API = 'http://localhost:8080/api';
+    let currentUser = null;
+    let notifs = [];
+
+    // ── Login / Logout ───────────────────────────────────────
+    async function doLogin() {
+        const email    = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const errBox   = document.getElementById('loginError');
+        errBox.style.display = 'none';
+
+        if (!email || !password) {
+            errBox.textContent = 'Please enter your email and password.';
+            errBox.style.display = 'block';
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API}/users/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            if (!res.ok) {
+                const msg = await res.text();
+                errBox.textContent = msg || 'Login failed. Please check your credentials.';
+                errBox.style.display = 'block';
+                return;
+            }
+
+            currentUser = await res.json();
+            startApp();
+        } catch (e) {
+            errBox.textContent = 'Could not connect to server. Make sure Spring Boot is running.';
+            errBox.style.display = 'block';
+        }
+    }
+
+    function doLogout() {
+        currentUser = null;
+        notifs = [];
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('mainApp').style.display = 'none';
+        document.getElementById('loginPage').style.display = 'flex';
+    }
+
+    // ── Start app after login ────────────────────────────────
+    function startApp() {
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('mainApp').style.display   = 'block';
+
+        const isAdmin = currentUser.role === 'ADMIN';
+
+        // Nav user info
+        document.getElementById('navUser').textContent = currentUser.fullName;
+        document.getElementById('navRole').textContent = currentUser.role;
+        document.getElementById('navRole').className =
+            'nav-role role-' + currentUser.role;
+
+        // Build nav links based on role
+        const links = document.getElementById('navLinks');
+        if (isAdmin) {
+            links.innerHTML = `
+      <button class="nav-btn" onclick="showPage('dashboard')">Dashboard</button>
+      <button class="nav-btn" onclick="showPage('events')">Events</button>
+      <button class="nav-btn" onclick="showPage('create')">Create event</button>
+      <button class="nav-btn" onclick="showPage('manageUsers')">Users</button>
+      <button class="nav-btn" onclick="showPage('notifications')">Notifications</button>`;
+
+            // Show admin-only elements
+            document.querySelectorAll('.admin-only')
+                .forEach(el => el.style.display = 'inline-block');
+
+            document.getElementById('metric4Label').textContent = 'Total users';
+        } else {
+            links.innerHTML = `
+      <button class="nav-btn" onclick="showPage('dashboard')">Dashboard</button>
+      <button class="nav-btn" onclick="showPage('events')">Events</button>
+      <button class="nav-btn" onclick="showPage('myRegistrations')">My registrations</button>
+      <button class="nav-btn" onclick="showPage('notifications')">Notifications</button>`;
+
+            document.getElementById('metric4Label').textContent = 'My registrations';
+        }
+
+        showPage('dashboard');
+    }
+
+    // ── Navigation ───────────────────────────────────────────
+    function showPage(id) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+
+        // Highlight correct nav button
+        document.querySelectorAll('.nav-btn').forEach(b => {
+            if (b.getAttribute('onclick') === `showPage('${id}')`)
+                b.classList.add('active');
+        });
+
+        if (id === 'dashboard')       loadDashboard();
+        if (id === 'events')          loadEvents();
+        if (id === 'manageUsers')     loadUsers();
+        if (id === 'myRegistrations') loadMyRegistrations();
+    }
+
+    // ── Toast ────────────────────────────────────────────────
+    function toast(msg, type = '') {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = 'toast show ' + type;
+        setTimeout(() => t.className = 'toast', 3000);
+    }
+
+    // ── Notifications feed ───────────────────────────────────
+    function addNotif(title, desc, color) {
+        notifs.unshift({ title, desc, color, time: new Date() });
+        renderNotifs();
+    }
+    function renderNotifs() {
+        const el = document.getElementById('notifList');
+        if (!notifs.length) {
+            el.innerHTML = '<div class="empty">No notifications yet.</div>';
+            return;
+        }
+        el.innerHTML = notifs.map(n => `
+    <div class="notif-item">
+      <div class="notif-dot" style="background:${n.color}"></div>
+      <div>
+        <div class="notif-title">${n.title}</div>
+        <div class="notif-desc">${n.desc}</div>
+        <div class="notif-time">${timeAgo(n.time)}</div>
+      </div>
+    </div>`).join('');
+    }
+    function clearNotifs() { notifs = []; renderNotifs(); }
+    function timeAgo(d) {
+        const s = Math.floor((new Date() - d) / 1000);
+        if (s < 60) return 'just now';
+        if (s < 3600) return Math.floor(s/60) + ' min ago';
+        return Math.floor(s/3600) + ' hr ago';
+    }
+
+    // ── Dashboard ────────────────────────────────────────────
+    async function loadDashboard() {
+        const isAdmin = currentUser.role === 'ADMIN';
+        try {
+            const events = await fetch(`${API}/events`).then(r => r.json());
+            document.getElementById('totalEvents').textContent    = events.length;
+            document.getElementById('upcomingEvents').textContent =
+                events.filter(e => e.status === 'UPCOMING').length;
+            document.getElementById('ongoingEvents').textContent  =
+                events.filter(e => e.status === 'ONGOING').length;
+
+            if (isAdmin) {
+                const users = await fetch(`${API}/users`).then(r => r.json());
+                document.getElementById('metric4Value').textContent = users.length;
+            } else {
+                const regs = await fetch(
+                    `${API}/registrations/user/${currentUser.id}`).then(r => r.json());
+                document.getElementById('metric4Value').textContent = regs.length;
+            }
+
+            const grid = document.getElementById('dashboardEvents');
+            grid.innerHTML = events.length
+                ? events.slice(0,3).map(eventCard).join('')
+                : '<div class="empty">No events yet.</div>';
+        } catch(e) { console.error(e); }
+    }
+
+    // ── Events ───────────────────────────────────────────────
+    async function loadEvents() {
+        const isAdmin = currentUser.role === 'ADMIN';
+        try {
+            const events = await fetch(`${API}/events`).then(r => r.json());
+            const tbody  = document.getElementById('eventsTableBody');
+            if (!events.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty">No events found.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = events.map(e => `
+      <tr>
+        <td>${e.title}</td>
+        <td>${e.eventDate ? e.eventDate.substring(0,10) : '–'}</td>
+        <td>${e.location}</td>
+        <td>${e.currentAttendees} / ${e.maxAttendees}</td>
+        <td>${e.eventType || '–'}</td>
+        <td><span class="badge badge-${e.status}">${e.status}</span></td>
+        <td>
+          ${isAdmin
+                ? `<select class="form-input" style="font-size:12px;padding:4px 8px;width:auto"
+                 onchange="updateStatus(${e.id}, this.value)">
+                 <option value="">Change status</option>
+                 <option value="UPCOMING">Upcoming</option>
+                 <option value="ONGOING">Ongoing</option>
+                 <option value="COMPLETED">Completed</option>
+                 <option value="CANCELLED">Cancelled</option>
+               </select>`
+                : `<button class="btn btn-sm btn-primary"
+                 onclick="registerForEvent(${e.id}, '${e.title}')">
+                 Register
+               </button>`
+            }
+        </td>
+      </tr>`).join('');
+        } catch(e) { console.error(e); }
+    }
+
+    async function updateStatus(id, status) {
+        if (!status) return;
+        try {
+            await fetch(`${API}/events/${id}/status?status=${status}`, { method: 'PUT' });
+            toast('Status updated to ' + status);
+            addNotif('Status updated', 'Event #' + id + ' → ' + status, '#378ADD');
+            loadEvents();
+        } catch(e) { toast('Update failed', 'error'); }
+    }
+
+    async function registerForEvent(eventId, title) {
+        try {
+            await fetch(
+                `${API}/registrations?userId=${currentUser.id}&eventId=${eventId}`,
+                { method: 'POST' }
+            );
+            toast('Registered for ' + title + '!');
+            addNotif('Registration confirmed',
+                'You registered for: ' + title, '#1e8449');
+            loadEvents();
+        } catch(e) { toast('Registration failed', 'error'); }
+    }
+
+    // ── Create Event ─────────────────────────────────────────
+    async function submitCreateEvent() {
+        const title    = document.getElementById('eventTitle').value.trim();
+        const desc     = document.getElementById('eventDesc').value.trim();
+        const date     = document.getElementById('eventDate').value;
+        const location = document.getElementById('eventLocation').value.trim();
+        const max      = parseInt(document.getElementById('eventMax').value);
+        const type     = document.getElementById('eventType').value;
+
+        if (!title || !date || !location || !max) {
+            toast('Please fill in all required fields', 'error'); return;
+        }
+        try {
+            const event = await fetch(`${API}/events`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title, description: desc, eventDate: date,
+                    location, maxAttendees: max, eventType: type
+                })
+            }).then(r => r.json());
+            toast('Event created!');
+            addNotif('New event created', event.title + ' has been added.', '#1e8449');
+            clearForm();
+            showPage('events');
+        } catch(e) { toast('Failed to create event', 'error'); }
+    }
+
+    function clearForm() {
+        ['eventTitle','eventDesc','eventDate','eventLocation','eventMax']
+            .forEach(id => document.getElementById(id).value = '');
+    }
+
+    // ── Manage Users (admin) ─────────────────────────────────
+    async function loadUsers() {
+        try {
+            const users = await fetch(`${API}/users`).then(r => r.json());
+            const list  = document.getElementById('usersList');
+            list.innerHTML = users.length
+                ? users.map(u => `
+          <div class="user-card">
+            <div class="avatar">${initials(u.fullName)}</div>
+            <div style="flex:1">
+              <div style="font-weight:500">${u.fullName}</div>
+              <div style="font-size:12px;color:#888">${u.email}</div>
+            </div>
+            <span class="badge role-${u.role}"
+              style="padding:4px 10px;border-radius:20px;font-size:11px">
+              ${u.role}
+            </span>
+          </div>`).join('')
+                : '<div class="empty">No users found.</div>';
+        } catch(e) { console.error(e); }
+    }
+
+    async function createUser() {
+        const fullName = document.getElementById('userName').value.trim();
+        const email    = document.getElementById('userEmail').value.trim();
+        const phone    = document.getElementById('userPhone').value.trim();
+        const password = document.getElementById('userPassword').value;
+        const role     = document.getElementById('userRole').value;
+        if (!fullName || !email || !password) {
+            toast('Name, email and password are required', 'error'); return;
+        }
+        try {
+            await fetch(`${API}/users`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fullName, email, phone, password, role })
+            });
+            toast('User created!');
+            addNotif('New user added', fullName + ' joined as ' + role, '#1e8449');
+            toggleCreateUser();
+            loadUsers();
+        } catch(e) { toast('Failed to create user', 'error'); }
+    }
+
+    function toggleCreateUser() {
+        const f = document.getElementById('createUserForm');
+        f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // ── My Registrations (user) ──────────────────────────────
+    async function loadMyRegistrations() {
+        try {
+            const regs = await fetch(
+                `${API}/registrations/user/${currentUser.id}`).then(r => r.json());
+            const el = document.getElementById('myRegList');
+            el.innerHTML = regs.length
+                ? regs.map(r => `
+          <div class="reg-card">
+            <div class="reg-dot"></div>
+            <div style="flex:1">
+              <div style="font-weight:500">${r.event.title}</div>
+              <div style="font-size:12px;color:#888">
+                ${r.event.location} ·
+                ${r.event.eventDate
+                    ? r.event.eventDate.substring(0,10) : '–'}
+              </div>
+            </div>
+            <span class="badge badge-${r.event.status}">
+              ${r.event.status}
+            </span>
+            <span class="badge" style="background:#eafaf1;color:#1e8449">
+              ${r.status}
+            </span>
+          </div>`).join('')
+                : '<div class="empty">You have not registered for any events yet.</div>';
+        } catch(e) { console.error(e); }
+    }
+
+    // ── Helpers ──────────────────────────────────────────────
+    function eventCard(e) {
+        const pct = e.maxAttendees > 0
+            ? Math.round((e.currentAttendees / e.maxAttendees) * 100) : 0;
+        return `
+    <div class="event-card">
+      <div class="event-card-top">
+        <span class="event-title">${e.title}</span>
+        <span class="badge badge-${e.status}">${e.status}</span>
+      </div>
+      <div class="event-meta">
+        ${e.eventDate ? e.eventDate.substring(0,10) : '–'} · ${e.location}
+      </div>
+      <div class="event-meta">${e.eventType || ''}</div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="progress-label">
+        ${e.currentAttendees} / ${e.maxAttendees} seats filled
+      </div>
+    </div>`;
+    }
+
+    function initials(name) {
+        return name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    }
+</script>
+</body>
+</html>
