@@ -18,8 +18,18 @@ public abstract class EventServiceDecorator implements IEventService {
     }
 
     @Override
+    public Event updateEvent(Long id, Event event) {
+        return wrapped.updateEvent(id, event);
+    }
+
+    @Override
     public Event updateEventStatus(Long id, EventStatus newStatus) {
         return wrapped.updateEventStatus(id, newStatus);
+    }
+
+    @Override
+    public void deleteEvent(Long id) {
+        wrapped.deleteEvent(id);
     }
 
     @Override

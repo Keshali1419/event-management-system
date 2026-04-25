@@ -20,11 +20,26 @@ public class LoggingEventServiceDecorator extends EventServiceDecorator{
     }
 
     @Override
+    public Event updateEvent(Long id, Event event) {
+        System.out.println("[LOG - " + LocalDateTime.now() + "] Updating event ID: " + id);
+        Event result = wrapped.updateEvent(id, event);
+        System.out.println("[LOG - " + LocalDateTime.now() + "] Event updated successfully");
+        return result;
+    }
+
+    @Override
     public Event updateEventStatus(Long id, EventStatus newStatus) {
         System.out.println("[LOG - " + LocalDateTime.now() + "] Updating event ID : " + id + " to status: " + newStatus);
         Event result = wrapped.updateEventStatus(id, newStatus);
         System.out.println("[LOG - " + LocalDateTime.now() + "] Event updated successfully ");
         return result;
+    }
+
+    @Override
+    public void deleteEvent(Long id) {
+        System.out.println("[LOG - " + LocalDateTime.now() + "] Deleting event ID: " + id);
+        wrapped.deleteEvent(id);
+        System.out.println("[LOG - " + LocalDateTime.now() + "] Event deleted successfully");
     }
 
     @Override
