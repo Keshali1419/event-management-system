@@ -1008,9 +1008,10 @@
     <!-- ── CREATE EVENT (admin only) ── -->
     <div class="page" id="create">
         <div class="section-header">
-            <span class="section-title">Create new event</span>
+            <span class="section-title" id="eventFormTitle">Create new event</span>
         </div>
         <div class="form-card">
+            <input type="hidden" id="editingEventId" value=""/>
             <div class="form-group">
                 <label class="form-label">Event title</label>
                 <input class="form-input" id="eventTitle" placeholder="e.g. Annual Research Symposium"/>
@@ -1043,7 +1044,8 @@
                 </div>
             </div>
             <div class="form-actions">
-                <button class="btn btn-primary" onclick="submitCreateEvent()">Create event</button>
+                <button class="btn btn-primary" id="eventSubmitBtn" onclick="submitCreateEvent()">Create event</button>
+                <button class="btn" id="cancelEditBtn" onclick="cancelEditEvent()" style="display:none">Cancel edit</button>
                 <button class="btn" onclick="clearForm()">Clear</button>
             </div>
         </div>
@@ -1420,14 +1422,19 @@
         <td><span class="badge badge-${e.status}">${e.status}</span></td>
         <td>
           ${isAdmin
-                ? `<select class="form-input" style="font-size:12px;padding:5px 10px;width:auto"
-                 onchange="updateStatus(${e.id}, this.value)">
-                 <option value="">Change status</option>
-                 <option value="UPCOMING">Upcoming</option>
-                 <option value="ONGOING">Ongoing</option>
-                 <option value="COMPLETED">Completed</option>
-                 <option value="CANCELLED">Cancelled</option>
-               </select>`
+                                ? `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                                 <select class="form-input" style="font-size:12px;padding:5px 10px;width:auto"
+                                     onchange="updateStatus(${e.id}, this.value)">
+                                     <option value="">Change status</option>
+                                     <option value="UPCOMING">Upcoming</option>
+                                     <option value="ONGOING">Ongoing</option>
+                                     <option value="COMPLETED">Completed</option>
+                                     <option value="CANCELLED">Cancelled</option>
+                                 </select>
+                                 <button class="btn btn-sm" onclick="openEditEvent(${e.id})">Edit</button>
+                                 <button class="btn btn-sm" style="color:var(--red);border-color:rgba(139,26,26,0.2)"
+                                     onclick="deleteEvent(${e.id}, '${(e.title || '').replace(/'/g, "\\'")}')">Delete</button>
+                             </div>`
                 : `<button class="btn btn-sm btn-primary"
                  onclick="registerForEvent(${e.id}, '${e.title}')">
                  Register
@@ -1440,12 +1447,17 @@
 
     async function updateStatus(id, status) {
         if (!status) return;
+        if (!currentUser || currentUser.role !== 'ADMIN') {
+            toast('Only Admin can update events', 'error');
+            return;
+        }
         try {
-            await fetch(`${API}/events/${id}/status?status=${status}`, { method: 'PUT' });
+            const res = await fetch(`${API}/events/${id}/status?actorUserId=${currentUser.id}&status=${status}`, { method: 'PUT' });
+            if (!res.ok) throw new Error(await res.text());
             toast('Status updated to ' + status);
             addNotif('Status updated', 'Event #' + id + ' → ' + status, '#378ADD');
             loadEvents();
-        } catch(e) { toast('Update failed', 'error'); }
+        } catch(e) { toast(e.message || 'Update failed', 'error'); }
     }
 
     async function registerForEvent(eventId, title) {
@@ -1462,6 +1474,12 @@
 
     // ── Create Event ─────────────────────────────────────────
     async function submitCreateEvent() {
+        if (!currentUser || currentUser.role !== 'ADMIN') {
+            toast('Only Admin can create events', 'error');
+            return;
+        }
+
+        const editingEventId = document.getElementById('editingEventId').value;
         const title    = document.getElementById('eventTitle').value.trim();
         const desc     = document.getElementById('eventDesc').value.trim();
         const date     = document.getElementById('eventDate').value;
@@ -1473,24 +1491,96 @@
             toast('Please fill in all required fields', 'error'); return;
         }
         try {
-            const event = await fetch(`${API}/events`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    title, description: desc, eventDate: date,
-                    location, maxAttendees: max, eventType: type
-                })
-            }).then(r => r.json());
-            toast('Event created!');
-            addNotif('New event created', event.title + ' has been added.', '#2d6a4f');
+            const isEditing = Boolean(editingEventId);
+            const res = await fetch(
+                isEditing
+                    ? `${API}/events/${editingEventId}?actorUserId=${currentUser.id}`
+                    : `${API}/events?actorUserId=${currentUser.id}`,
+                {
+                    method: isEditing ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title,
+                        description: desc,
+                        eventDate: date,
+                        location,
+                        maxAttendees: max,
+                        eventType: type
+                    })
+                }
+            );
+            if (!res.ok) throw new Error(await res.text());
+            const event = await res.json();
+            toast(isEditing ? 'Event updated!' : 'Event created!');
+            addNotif(isEditing ? 'Event updated' : 'New event created', event.title + (isEditing ? ' has been updated.' : ' has been added.'), '#2d6a4f');
             clearForm();
+            cancelEditEvent();
             showPage('events');
-        } catch(e) { toast('Failed to create event', 'error'); }
+        } catch(e) { toast(e.message || 'Failed to create event', 'error'); }
+    }
+
+    async function openEditEvent(id) {
+        if (!currentUser || currentUser.role !== 'ADMIN') {
+            toast('Only Admin can update events', 'error');
+            return;
+        }
+
+        try {
+            const eventRes = await fetch(`${API}/events/${id}`);
+            if (!eventRes.ok) throw new Error(await eventRes.text());
+            const existing = await eventRes.json();
+
+            document.getElementById('editingEventId').value = existing.id;
+            document.getElementById('eventFormTitle').textContent = 'Edit event';
+            document.getElementById('eventSubmitBtn').textContent = 'Update event';
+            document.getElementById('cancelEditBtn').style.display = 'inline-flex';
+
+            document.getElementById('eventTitle').value = existing.title || '';
+            document.getElementById('eventDesc').value = existing.description || '';
+            document.getElementById('eventDate').value = normalizeDateTime(existing.eventDate || '');
+            document.getElementById('eventLocation').value = existing.location || '';
+            document.getElementById('eventMax').value = existing.maxAttendees ?? '';
+
+            await loadEventTypes();
+            document.getElementById('eventType').value = existing.eventType || '';
+
+            showPage('create');
+            toast('Event loaded into form for editing');
+        } catch (e) {
+            toast(e.message || 'Failed to update event', 'error');
+        }
+    }
+
+    async function deleteEvent(id, title) {
+        if (!currentUser || currentUser.role !== 'ADMIN') {
+            toast('Only Admin can delete events', 'error');
+            return;
+        }
+        if (!confirm(`Delete event "${title}"?`)) return;
+
+        try {
+            const res = await fetch(`${API}/events/${id}?actorUserId=${currentUser.id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error(await res.text());
+            toast('Event deleted');
+            addNotif('Event deleted', title + ' was removed.', '#8b1a1a');
+            loadEvents();
+            loadDashboard();
+        } catch (e) {
+            toast(e.message || 'Failed to delete event', 'error');
+        }
     }
 
     function clearForm() {
         ['eventTitle','eventDesc','eventDate','eventLocation','eventMax','eventType']
             .forEach(id => document.getElementById(id).value = '');
+    }
+
+    function cancelEditEvent() {
+        document.getElementById('editingEventId').value = '';
+        document.getElementById('eventFormTitle').textContent = 'Create new event';
+        document.getElementById('eventSubmitBtn').textContent = 'Create event';
+        document.getElementById('cancelEditBtn').style.display = 'none';
+        clearForm();
     }
 
     async function loadEventTypes() {
@@ -1759,6 +1849,18 @@
 
     function formatEventTime(eventDate) {
         return eventDate ? eventDate.substring(11,16) : '–';
+    }
+
+    function normalizeDateTime(value) {
+        if (!value) return '';
+        const raw = String(value);
+        if (raw.includes('T')) {
+            return raw.substring(0, 16);
+        }
+        const date = new Date(raw);
+        if (Number.isNaN(date.getTime())) return raw;
+        const pad = n => String(n).padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
     }
 </script>
 </body>
