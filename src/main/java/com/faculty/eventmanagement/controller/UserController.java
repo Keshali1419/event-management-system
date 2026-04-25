@@ -2,7 +2,7 @@ package com.faculty.eventmanagement.controller;
 
 import com.faculty.eventmanagement.model.User;
 import com.faculty.eventmanagement.serialization.UserSession;
-import com.faculty.eventmanagement.service.UserService;
+import com.faculty.eventmanagement.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

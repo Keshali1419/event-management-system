@@ -1,4 +1,4 @@
-package com.faculty.eventmanagement.service;
+package com.faculty.eventmanagement.services;
 
 import com.faculty.eventmanagement.config.EventConfigManager;
 import com.faculty.eventmanagement.model.Event;
