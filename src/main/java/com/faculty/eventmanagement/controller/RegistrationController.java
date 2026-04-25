@@ -1,7 +1,7 @@
 package com.faculty.eventmanagement.controller;
 
 import com.faculty.eventmanagement.model.Registration;
-import com.faculty.eventmanagement.service.RegistrationService;
+import com.faculty.eventmanagement.services.RegistrationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

@@ -1,4 +1,4 @@
-package com.faculty.eventmanagement.service;
+package com.faculty.eventmanagement.services;
 
 import com.faculty.eventmanagement.factory.NotificationFactory;
 import com.faculty.eventmanagement.notification.Notification;

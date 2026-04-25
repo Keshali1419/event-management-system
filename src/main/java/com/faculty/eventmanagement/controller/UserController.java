@@ -1,8 +1,9 @@
 package com.faculty.eventmanagement.controller;
 
 import com.faculty.eventmanagement.model.User;
+import com.faculty.eventmanagement.model.UserRole;
 import com.faculty.eventmanagement.serialization.UserSession;
-import com.faculty.eventmanagement.service.UserService;
+import com.faculty.eventmanagement.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,14 +21,46 @@ public class UserController {
         return ResponseEntity.ok(userService.createUser(user));
     }
 
+    @PostMapping("/signup")
+    public ResponseEntity<?> signup(@RequestBody User user) {
+        try {
+            if (user.getRole() == UserRole.ADMIN && userService.hasAdminAccount()) {
+                return ResponseEntity.badRequest()
+                        .body("Admin sign up is allowed only when no admin account exists.");
+            }
+            if (user.getRegistrationNo() == null || user.getRegistrationNo().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Registration no is required for sign up.");
+            }
+            return ResponseEntity.ok(userService.createUser(user));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
+    
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User user) {
+        try {
+            return ResponseEntity.ok(userService.updateUser(id, user));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id, @RequestParam(required = false) String state) {
+        userService.deleteUser(id, state);
+        return ResponseEntity.ok("User deleted successfully");
     }
 
     @PostMapping("/login")
