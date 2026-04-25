@@ -126,6 +126,10 @@
             background: #fff; border: 1px solid #e5e5e5;
             border-radius: 10px; padding: 16px;
         }
+        .event-image {
+            width: 100%; height: 160px; object-fit: cover;
+            border-radius: 8px; margin-bottom: 12px; background: #f3f3f3;
+        }
         .event-card-top {
             display: flex; justify-content: space-between;
             align-items: flex-start; margin-bottom: 10px; gap: 8px;
@@ -146,6 +150,10 @@
         }
         .progress-fill { height: 4px; border-radius: 2px; background: #378ADD; }
         .progress-label { font-size: 11px; color: #aaa; }
+        .event-thumb {
+            width: 56px; height: 40px; object-fit: cover;
+            border-radius: 6px; display: block; background: #f3f3f3;
+        }
 
         /* TABLE */
         .table-card {
@@ -395,11 +403,11 @@
                 <thead>
                 <tr>
                     <th>Title</th><th>Description</th><th>Date</th><th>Time</th><th>Location</th>
-                    <th>Attendees</th><th>Type</th><th>Status</th><th>Action</th>
+                    <th>Attendees</th><th>Type</th><th>Image</th><th>Status</th><th>Action</th>
                 </tr>
                 </thead>
                 <tbody id="eventsTableBody">
-                <tr><td colspan="9" class="empty">Loading...</td></tr>
+                <tr><td colspan="10" class="empty">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -440,6 +448,16 @@
                     <select class="form-input" id="eventType">
                         <option value="">Select event type</option>
                     </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Image file</label>
+                    <input class="form-input" id="eventImageFile" type="file" accept="image/*" onchange="handleEventImageFile(this.files[0])"/>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Image URL</label>
+                    <input class="form-input" id="eventImageUrl" placeholder="Paste an image URL or upload a file"/>
                 </div>
             </div>
             <div class="form-actions">
@@ -819,7 +837,7 @@
 
             const tbody  = document.getElementById('eventsTableBody');
             if (!filteredEvents.length) {
-                tbody.innerHTML = '<tr><td colspan="9" class="empty">No events found for selected filters.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="empty">No events found for selected filters.</td></tr>';
                 return;
             }
             tbody.innerHTML = filteredEvents.map(e => `
@@ -831,6 +849,7 @@
         <td>${e.location}</td>
         <td>${e.currentAttendees} / ${e.maxAttendees}</td>
         <td>${e.eventType || '–'}</td>
+        <td>${e.imageUrl ? `<img class="event-thumb" src="${e.imageUrl}" alt="${(e.title || 'Event').replace(/"/g, '&quot;')}"/>` : '–'}</td>
         <td><span class="badge badge-${e.status}">${e.status}</span></td>
         <td>
           ${isAdmin
@@ -890,6 +909,11 @@
         const location = document.getElementById('eventLocation').value.trim();
         const max      = parseInt(document.getElementById('eventMax').value);
         const type     = document.getElementById('eventType').value;
+        const imageUrlInput = document.getElementById('eventImageUrl').value.trim();
+        const existingImageUrl = currentEventId
+            ? (eventsCache.find(event => event.id === currentEventId)?.imageUrl || '')
+            : '';
+        const imageUrl = imageUrlInput || existingImageUrl;
 
         if (!title || !date || !location || !max || !type) {
             toast('Please fill in all required fields', 'error'); return;
@@ -902,7 +926,8 @@
                     headers: adminHeaders(),
                     body: JSON.stringify({
                         title, description: desc, eventDate: date,
-                        location, maxAttendees: max, eventType: type
+                        location, maxAttendees: max, eventType: type,
+                        imageUrl
                     })
                 }
             );
@@ -925,8 +950,12 @@
     }
 
     function clearForm() {
-        ['eventTitle','eventDesc','eventDate','eventLocation','eventMax','eventType']
+        ['eventTitle','eventDesc','eventDate','eventLocation','eventMax','eventType','eventImageUrl']
             .forEach(id => document.getElementById(id).value = '');
+        const fileInput = document.getElementById('eventImageFile');
+        if (fileInput) {
+            fileInput.value = '';
+        }
         currentEventId = null;
         document.getElementById('eventFormTitle').textContent = 'Create new event';
         document.getElementById('eventSubmitBtn').textContent = 'Create event';
@@ -948,7 +977,21 @@
         document.getElementById('eventLocation').value = event.location || '';
         document.getElementById('eventMax').value = event.maxAttendees ?? '';
         document.getElementById('eventType').value = event.eventType || '';
+        document.getElementById('eventImageUrl').value = event.imageUrl || '';
+        document.getElementById('eventImageFile').value = '';
         showPage('create');
+    }
+
+    function handleEventImageFile(file) {
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            document.getElementById('eventImageUrl').value = reader.result || '';
+            toast('Image loaded into the event form');
+        };
+        reader.onerror = () => toast('Could not read image file', 'error');
+        reader.readAsDataURL(file);
     }
 
     async function deleteEvent(id, title) {
@@ -1281,6 +1324,7 @@
             ? Math.round((e.currentAttendees / e.maxAttendees) * 100) : 0;
         return `
     <div class="event-card">
+            ${e.imageUrl ? `<img class="event-image" src="${e.imageUrl}" alt="${(e.title || 'Event').replace(/"/g, '&quot;')}"/>` : ''}
       <div class="event-card-top">
         <span class="event-title">${e.title}</span>
         <span class="badge badge-${e.status}">${e.status}</span>
