@@ -1,6 +1,7 @@
 package com.faculty.eventmanagement.controller;
 
 import com.faculty.eventmanagement.model.User;
+import com.faculty.eventmanagement.model.UserRole;
 import com.faculty.eventmanagement.serialization.UserSession;
 import com.faculty.eventmanagement.services.UserService;
 import lombok.RequiredArgsConstructor;
@@ -20,10 +21,24 @@ public class UserController {
         return ResponseEntity.ok(userService.createUser(user));
     }
 
+    @PostMapping("/signup")
+    public ResponseEntity<?> signup(@RequestBody User user) {
+        try {
+            if (user.getRole() == UserRole.ADMIN) {
+                return ResponseEntity.badRequest()
+                        .body("Admin sign up is not allowed.");
+            }
+            return ResponseEntity.ok(userService.createUser(user));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
+    
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
