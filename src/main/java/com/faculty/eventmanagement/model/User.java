@@ -19,7 +19,12 @@ public class User implements Serializable {
     private String email;
     private String phone;
     private String password;
+    private String registrationNo;
 
     @Enumerated(EnumType.STRING)
     private UserRole role;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "deletion_state")
+    private UserDeletionState deletionState;
 }

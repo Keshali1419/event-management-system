@@ -24,9 +24,12 @@ public class UserController {
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody User user) {
         try {
-            if (user.getRole() == UserRole.ADMIN) {
+            if (user.getRole() == UserRole.ADMIN && userService.hasAdminAccount()) {
                 return ResponseEntity.badRequest()
-                        .body("Admin sign up is not allowed.");
+                        .body("Admin sign up is allowed only when no admin account exists.");
+            }
+            if (user.getRegistrationNo() == null || user.getRegistrationNo().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Registration no is required for sign up.");
             }
             return ResponseEntity.ok(userService.createUser(user));
         } catch (IllegalArgumentException e) {
@@ -43,6 +46,21 @@ public class UserController {
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User user) {
+        try {
+            return ResponseEntity.ok(userService.updateUser(id, user));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id, @RequestParam(required = false) String state) {
+        userService.deleteUser(id, state);
+        return ResponseEntity.ok("User deleted successfully");
     }
 
     @PostMapping("/login")

@@ -66,6 +66,11 @@
             font-size: 11px; font-weight: 600; padding: 3px 8px;
             border-radius: 20px;
         }
+        .nav-reg {
+            font-size: 11px; color: #777;
+            background: #fafafa; border: 1px solid #ececec;
+            padding: 3px 8px; border-radius: 20px;
+        }
         .role-ADMIN    { background: #fdf0f0; color: #c0392b; }
         .role-STUDENT  { background: #e8f4fd; color: #1a6fa8; }
         .role-LECTURER { background: #eafaf1; color: #1e8449; }
@@ -171,6 +176,9 @@
         }
         .form-input:focus { border-color: #1a1a1a; }
         .form-actions { display: flex; gap: 10px; margin-top: 6px; }
+        .filters { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+        .filters .form-input { max-width: 260px; }
+        .type-chip-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 
         /* USERS */
         .users-list { display: flex; flex-direction: column; gap: 10px; }
@@ -244,6 +252,7 @@
                        placeholder="e.g. kasun@faculty.edu"
                        onkeydown="if(event.key==='Enter') doLogin()"/>
             </div>
+
             <div class="form-group">
                 <label class="form-label">Password</label>
                 <input class="form-input" id="loginPassword" type="password"
@@ -252,20 +261,29 @@
             </div>
             <button class="btn btn-primary" style="width:100%;margin-top:4px"
                     onclick="doLogin()">Sign in</button>
+
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0f0f0">
+                <div style="font-size:12px;color:#aaa;margin-bottom:8px">Test accounts</div>
+                <div style="font-size:12px;color:#888;line-height:1.8">
+                    Admin: admin@faculty.edu / admin123<br>
+                    Student: kasun@faculty.edu / student123
+                </div>
+            </div>
         </div>
 
         <div id="signupForm" style="display:none">
+            <div class="form-group">
+                <label class="form-label">Registration no</label>
+                <input class="form-input" id="signupRegNo" type="text"
+                       placeholder="e.g. REG-1A2B3C4D"
+                       onkeydown="if(event.key==='Enter') doSignup()"/>
+            </div>
             <div class="form-group">
                 <label class="form-label">Full name</label>
                 <input class="form-input" id="signupName" placeholder="e.g. Kasun Perera"
                        onkeydown="if(event.key==='Enter') doSignup()"/>
             </div>
-            <div class="form-group">
-                <label class="form-label">Email address</label>
-                <input class="form-input" id="signupEmail" type="email"
-                       placeholder="e.g. kasun@faculty.edu"
-                       onkeydown="if(event.key==='Enter') doSignup()"/>
-            </div>
+
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Phone</label>
@@ -277,8 +295,15 @@
                     <select class="form-input" id="signupRole">
                         <option value="STUDENT">Student</option>
                         <option value="LECTURER">Lecturer</option>
+                        <option value="ADMIN">Admin</option>
                     </select>
                 </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email address</label>
+                <input class="form-input" id="signupEmail" type="email"
+                       placeholder="e.g. kasun@faculty.edu"
+                       onkeydown="if(event.key==='Enter') doSignup()"/>
             </div>
             <div class="form-group">
                 <label class="form-label">Password</label>
@@ -290,13 +315,7 @@
                     onclick="doSignup()">Create account</button>
         </div>
 
-        <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0f0f0">
-            <div style="font-size:12px;color:#aaa;margin-bottom:8px">Test accounts</div>
-            <div style="font-size:12px;color:#888;line-height:1.8">
-                Admin: admin@faculty.edu / admin123<br>
-                Student: kasun@faculty.edu / student123
-            </div>
-        </div>
+
     </div>
 </div>
 
@@ -310,6 +329,7 @@
         <div class="nav-right">
             <span class="nav-role" id="navRole"></span>
             <span class="nav-user" id="navUser"></span>
+            <span class="nav-reg" id="navReg"></span>
             <button class="btn btn-sm" onclick="doLogout()">Sign out</button>
         </div>
     </nav>
@@ -334,6 +354,19 @@
                 <div class="metric-value" id="metric4Value">–</div>
             </div>
         </div>
+        <div class="form-card admin-only" style="max-width:100%;margin-bottom:14px">
+            <div class="section-header" style="margin-bottom:10px">
+                <span class="section-title">Manage event types</span>
+                <span style="font-size:12px;color:#888">Count: <strong id="eventTypeCount">0</strong></span>
+            </div>
+            <div class="form-actions" style="margin-top:0">
+                <input class="form-input" id="adminEventTypeInput" placeholder="Type event type and press add" style="max-width:280px"/>
+                <button class="btn btn-primary" onclick="addEventType()">Add type</button>
+            </div>
+            <div class="type-chip-wrap" id="adminEventTypeList">
+                <span style="font-size:12px;color:#999">No event types yet.</span>
+            </div>
+        </div>
         <div class="section-header">
             <span class="section-title">Recent events</span>
         </div>
@@ -349,16 +382,23 @@
             <button class="btn btn-primary admin-only" id="newEventBtn"
                     onclick="showPage('create')">+ New event</button>
         </div>
+        <div class="filters">
+            <input class="form-input" id="eventNameFilter" placeholder="Filter by event name" oninput="loadEvents()"/>
+            <select class="form-input" id="eventTypeFilter" onchange="loadEvents()">
+                <option value="">All types</option>
+            </select>
+            <button class="btn" onclick="clearEventFilters()">Clear filters</button>
+        </div>
         <div class="table-card">
             <table>
                 <thead>
                 <tr>
-                    <th>Title</th><th>Date</th><th>Location</th>
+                    <th>Title</th><th>Description</th><th>Date</th><th>Time</th><th>Location</th>
                     <th>Attendees</th><th>Type</th><th>Status</th><th>Action</th>
                 </tr>
                 </thead>
                 <tbody id="eventsTableBody">
-                <tr><td colspan="7" class="empty">Loading...</td></tr>
+                <tr><td colspan="9" class="empty">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -397,8 +437,7 @@
                 <div class="form-group">
                     <label class="form-label">Event type</label>
                     <select class="form-input" id="eventType">
-                        <option value="ACADEMIC">Academic</option>
-                        <option value="CULTURAL">Cultural</option>
+                        <option value="">Select event type</option>
                     </select>
                 </div>
             </div>
@@ -413,46 +452,59 @@
     <div class="page" id="manageUsers">
         <div class="section-header">
             <span class="section-title">Manage users</span>
-            <button class="btn btn-primary" onclick="toggleCreateUser()">+ Add user</button>
         </div>
-        <div id="createUserForm" style="display:none;margin-bottom:20px">
-            <div class="form-card">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Full name</label>
-                        <input class="form-input" id="userName" placeholder="e.g. Kasun Perera"/>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Email</label>
-                        <input class="form-input" id="userEmail" placeholder="kasun@faculty.edu"/>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Phone</label>
-                        <input class="form-input" id="userPhone" placeholder="0771234567"/>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Password</label>
-                        <input class="form-input" id="userPassword" type="password" placeholder="password"/>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Role</label>
-                    <select class="form-input" id="userRole">
-                        <option value="STUDENT">Student</option>
-                        <option value="LECTURER">Lecturer</option>
-                        <option value="ADMIN">Admin</option>
-                    </select>
-                </div>
-                <div class="form-actions">
-                    <button class="btn btn-primary" onclick="createUser()">Add user</button>
-                    <button class="btn" onclick="toggleCreateUser()">Cancel</button>
-                </div>
-            </div>
+        <div class="filters" style="margin-bottom:20px">
+            <input class="form-input" id="userRegNoFilter" placeholder="Filter by registration number" oninput="loadUsers()"/>
+            <select class="form-input" id="userRoleFilter" onchange="loadUsers()">
+                <option value="">All roles</option>
+                <option value="STUDENT">STUDENT</option>
+                <option value="LECTURER">LECTURER</option>
+                <option value="ADMIN">ADMIN</option>
+            </select>
+            <button class="btn" onclick="clearUserFilters()">Clear filters</button>
         </div>
         <div class="users-list" id="usersList">
             <div class="empty">Loading...</div>
+        </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="page" id="profile">
+        <div class="section-header">
+            <span class="section-title">My profile</span>
+        </div>
+        <div class="form-card">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Registration no</label>
+                    <input class="form-input" id="profileRegNo" disabled/>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Role</label>
+                    <input class="form-input" id="profileRole" disabled/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Full name</label>
+                <input class="form-input" id="profileName"/>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input class="form-input" id="profileEmail" type="email"/>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Phone</label>
+                <input class="form-input" id="profilePhone"/>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input class="form-input" id="profilePassword" type="password"
+                       placeholder="Leave blank to keep your current password"/>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="updateMyProfile()">Update profile</button>
+                <button class="btn" onclick="deleteMyProfile()">Delete profile</button>
+            </div>
         </div>
     </div>
 
@@ -486,6 +538,8 @@
     let currentUser = null;
     let notifs = [];
     let authMode = 'login';
+    let eventTypes = [];
+    let eventTypeItems = [];
 
     // ── Login / Logout ───────────────────────────────────────
     function toggleAuthMode(mode) {
@@ -542,6 +596,7 @@
     }
 
     async function doSignup() {
+        const registrationNo = document.getElementById('signupRegNo').value.trim();
         const fullName = document.getElementById('signupName').value.trim();
         const email = document.getElementById('signupEmail').value.trim();
         const phone = document.getElementById('signupPhone').value.trim();
@@ -553,8 +608,8 @@
         errBox.style.display = 'none';
         infoBox.style.display = 'none';
 
-        if (!fullName || !email || !password) {
-            errBox.textContent = 'Full name, email and password are required.';
+        if (!registrationNo || !fullName || !email || !password || !role) {
+            errBox.textContent = 'Registration no, full name, email, role and password are required.';
             errBox.style.display = 'block';
             return;
         }
@@ -563,7 +618,7 @@
             const res = await fetch(`${API}/users/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fullName, email, phone, password, role })
+                body: JSON.stringify({ registrationNo, fullName, email, phone, password, role })
             });
 
             if (!res.ok) {
@@ -573,8 +628,11 @@
                 return;
             }
 
+            const user = await res.json();
+
             document.getElementById('loginEmail').value = email;
             document.getElementById('loginPassword').value = '';
+            document.getElementById('signupRegNo').value = '';
             document.getElementById('signupName').value = '';
             document.getElementById('signupEmail').value = '';
             document.getElementById('signupPhone').value = '';
@@ -582,7 +640,7 @@
             document.getElementById('signupRole').value = 'STUDENT';
 
             toggleAuthMode('login');
-            infoBox.textContent = 'Account created successfully. Please sign in.';
+            infoBox.textContent = `Account created successfully. Your registration no is ${user.registrationNo}. Please sign in.`;
             infoBox.style.display = 'block';
         } catch (e) {
             errBox.textContent = 'Could not connect to server. Make sure Spring Boot is running.';
@@ -597,6 +655,15 @@
         document.getElementById('loginPassword').value = '';
         document.getElementById('mainApp').style.display = 'none';
         document.getElementById('loginPage').style.display = 'flex';
+        document.getElementById('navReg').textContent = '';
+    }
+
+    function syncUserHeader() {
+        if (!currentUser) return;
+        document.getElementById('navUser').textContent = currentUser.fullName;
+        document.getElementById('navRole').textContent = currentUser.role;
+        document.getElementById('navRole').className = 'nav-role role-' + currentUser.role;
+        document.getElementById('navReg').textContent = currentUser.registrationNo || 'Pending';
     }
 
     // ── Start app after login ────────────────────────────────
@@ -606,11 +673,11 @@
 
         const isAdmin = currentUser.role === 'ADMIN';
 
-        // Nav user info
-        document.getElementById('navUser').textContent = currentUser.fullName;
-        document.getElementById('navRole').textContent = currentUser.role;
-        document.getElementById('navRole').className =
-            'nav-role role-' + currentUser.role;
+                // Nav user info
+                syncUserHeader();
+
+        // Load types and roles for dropdowns
+        loadEventTypes();
 
         // Build nav links based on role
         const links = document.getElementById('navLinks');
@@ -618,7 +685,7 @@
             links.innerHTML = `
       <button class="nav-btn" onclick="showPage('dashboard')">Dashboard</button>
       <button class="nav-btn" onclick="showPage('events')">Events</button>
-      <button class="nav-btn" onclick="showPage('create')">Create event</button>
+            <button class="nav-btn" onclick="showPage('profile')">Profile</button>
       <button class="nav-btn" onclick="showPage('manageUsers')">Users</button>
       <button class="nav-btn" onclick="showPage('notifications')">Notifications</button>`;
 
@@ -626,11 +693,12 @@
             document.querySelectorAll('.admin-only')
                 .forEach(el => el.style.display = 'inline-block');
 
-            document.getElementById('metric4Label').textContent = 'Total users';
+            document.getElementById('metric4Label').textContent = 'Event types';
         } else {
             links.innerHTML = `
       <button class="nav-btn" onclick="showPage('dashboard')">Dashboard</button>
       <button class="nav-btn" onclick="showPage('events')">Events</button>
+        <button class="nav-btn" onclick="showPage('profile')">Profile</button>
       <button class="nav-btn" onclick="showPage('myRegistrations')">My registrations</button>
       <button class="nav-btn" onclick="showPage('notifications')">Notifications</button>`;
 
@@ -655,6 +723,7 @@
         if (id === 'dashboard')       loadDashboard();
         if (id === 'events')          loadEvents();
         if (id === 'manageUsers')     loadUsers();
+        if (id === 'profile')         loadProfile();
         if (id === 'myRegistrations') loadMyRegistrations();
     }
 
@@ -707,12 +776,13 @@
                 events.filter(e => e.status === 'ONGOING').length;
 
             if (isAdmin) {
-                const users = await fetch(`${API}/users`).then(r => r.json());
-                document.getElementById('metric4Value').textContent = users.length;
+                await loadEventTypes();
+                document.getElementById('metric4Value').textContent = eventTypes.length;
             } else {
                 const regs = await fetch(
                     `${API}/registrations/user/${currentUser.id}`).then(r => r.json());
                 document.getElementById('metric4Value').textContent = regs.length;
+                await loadEventTypes();
             }
 
             const grid = document.getElementById('dashboardEvents');
@@ -726,16 +796,27 @@
     async function loadEvents() {
         const isAdmin = currentUser.role === 'ADMIN';
         try {
+            await loadEventTypes();
             const events = await fetch(`${API}/events`).then(r => r.json());
+            const nameFilter = document.getElementById('eventNameFilter').value.trim().toLowerCase();
+            const typeFilter = document.getElementById('eventTypeFilter').value;
+            const filteredEvents = events.filter(e => {
+                const matchesName = !nameFilter || (e.title || '').toLowerCase().includes(nameFilter);
+                const matchesType = !typeFilter || e.eventType === typeFilter;
+                return matchesName && matchesType;
+            });
+
             const tbody  = document.getElementById('eventsTableBody');
-            if (!events.length) {
-                tbody.innerHTML = '<tr><td colspan="7" class="empty">No events found.</td></tr>';
+            if (!filteredEvents.length) {
+                tbody.innerHTML = '<tr><td colspan="9" class="empty">No events found for selected filters.</td></tr>';
                 return;
             }
-            tbody.innerHTML = events.map(e => `
+            tbody.innerHTML = filteredEvents.map(e => `
       <tr>
         <td>${e.title}</td>
-        <td>${e.eventDate ? e.eventDate.substring(0,10) : '–'}</td>
+        <td>${e.description || '–'}</td>
+        <td>${formatEventDate(e.eventDate)}</td>
+        <td>${formatEventTime(e.eventDate)}</td>
         <td>${e.location}</td>
         <td>${e.currentAttendees} / ${e.maxAttendees}</td>
         <td>${e.eventType || '–'}</td>
@@ -792,7 +873,7 @@
         const max      = parseInt(document.getElementById('eventMax').value);
         const type     = document.getElementById('eventType').value;
 
-        if (!title || !date || !location || !max) {
+        if (!title || !date || !location || !max || !type) {
             toast('Please fill in all required fields', 'error'); return;
         }
         try {
@@ -812,57 +893,279 @@
     }
 
     function clearForm() {
-        ['eventTitle','eventDesc','eventDate','eventLocation','eventMax']
+        ['eventTitle','eventDesc','eventDate','eventLocation','eventMax','eventType']
             .forEach(id => document.getElementById(id).value = '');
+    }
+
+    async function loadEventTypes() {
+        try {
+            const res = await fetch(`${API}/event-types`);
+            if (!res.ok) {
+                throw new Error('Failed to load event types');
+            }
+            const data = await res.json();
+            eventTypeItems = Array.isArray(data) ? data : [];
+            eventTypes = eventTypeItems.map(t => t.name);
+            renderEventTypeUI();
+        } catch (e) {
+            eventTypeItems = [];
+            eventTypes = [];
+            renderEventTypeUI();
+        }
+    }
+
+    function renderEventTypeUI() {
+        const createSelect = document.getElementById('eventType');
+        const selectedCreateType = createSelect ? createSelect.value : '';
+        if (createSelect) {
+            createSelect.innerHTML = '<option value="">Select event type</option>'
+                + eventTypes.map(type => `<option value="${type}">${type}</option>`).join('');
+            if (selectedCreateType && eventTypes.includes(selectedCreateType)) {
+                createSelect.value = selectedCreateType;
+            }
+        }
+
+        const filterSelect = document.getElementById('eventTypeFilter');
+        const selectedFilterType = filterSelect ? filterSelect.value : '';
+        if (filterSelect) {
+            filterSelect.innerHTML = '<option value="">All types</option>'
+                + eventTypes.map(type => `<option value="${type}">${type}</option>`).join('');
+            if (selectedFilterType && eventTypes.includes(selectedFilterType)) {
+                filterSelect.value = selectedFilterType;
+            }
+        }
+
+        const countEl = document.getElementById('eventTypeCount');
+        if (countEl) {
+            countEl.textContent = String(eventTypes.length);
+        }
+
+        const listEl = document.getElementById('adminEventTypeList');
+        if (listEl) {
+            listEl.innerHTML = eventTypeItems.length
+                ? eventTypeItems.map(type => `
+                    <span class="badge" style="background:#eef4ff;color:#225f9b;display:inline-flex;align-items:center;gap:6px">
+                        ${type.name}
+                        <button class="btn btn-sm" style="padding:2px 8px" onclick="editEventType(${type.id}, '${(type.name || '').replace(/'/g, "\\'")}')">Edit</button>
+                        <button class="btn btn-sm" style="padding:2px 8px" onclick="deleteEventType(${type.id}, '${(type.name || '').replace(/'/g, "\\'")}')">Delete</button>
+                    </span>`).join('')
+                : '<span style="font-size:12px;color:#999">No event types yet.</span>';
+        }
+    }
+
+    async function addEventType() {
+        const input = document.getElementById('adminEventTypeInput');
+        const name = input.value.trim();
+
+        if (!name) {
+            toast('Type an event type name first', 'error');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API}/event-types`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            if (!res.ok) {
+                throw new Error(await res.text());
+            }
+            input.value = '';
+            await loadEventTypes();
+            toast('Event type added');
+            addNotif('Event type added', `${name} is now available in event forms.`, '#378ADD');
+        } catch (e) {
+            toast(e.message || 'Failed to add event type', 'error');
+        }
+    }
+
+    async function editEventType(id, currentName) {
+        const nextName = prompt('Edit event type name', currentName);
+        if (nextName === null) return;
+        const name = nextName.trim();
+        if (!name) {
+            toast('Event type name is required', 'error');
+            return;
+        }
+        try {
+            const res = await fetch(`${API}/event-types/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            if (!res.ok) {
+                throw new Error(await res.text());
+            }
+            await loadEventTypes();
+            toast('Event type updated');
+        } catch (e) {
+            toast(e.message || 'Failed to update event type', 'error');
+        }
+    }
+
+    async function deleteEventType(id, name) {
+        if (!confirm(`Delete event type "${name}"?`)) return;
+        try {
+            const res = await fetch(`${API}/event-types/${id}`, { method: 'DELETE' });
+            if (!res.ok) {
+                throw new Error(await res.text());
+            }
+            await loadEventTypes();
+            toast('Event type deleted');
+        } catch (e) {
+            toast(e.message || 'Failed to delete event type', 'error');
+        }
+    }
+
+    function clearEventFilters() {
+        document.getElementById('eventNameFilter').value = '';
+        document.getElementById('eventTypeFilter').value = '';
+        loadEvents();
     }
 
     // ── Manage Users (admin) ─────────────────────────────────
     async function loadUsers() {
         try {
-            const users = await fetch(`${API}/users`).then(r => r.json());
-            const list  = document.getElementById('usersList');
-            list.innerHTML = users.length
-                ? users.map(u => `
+            const allUsers = await fetch(`${API}/users`).then(r => r.json());
+            const regNoFilter = document.getElementById('userRegNoFilter').value.toLowerCase();
+            const roleFilter = document.getElementById('userRoleFilter').value;
+            
+            const filtered = allUsers.filter(u => {
+                const regNoMatch = !regNoFilter || (u.registrationNo && u.registrationNo.toLowerCase().includes(regNoFilter));
+                const roleMatch = !roleFilter || u.role === roleFilter;
+                return regNoMatch && roleMatch;
+            });
+            
+            const list = document.getElementById('usersList');
+            list.innerHTML = filtered.length
+                ? filtered.map(u => `
           <div class="user-card">
             <div class="avatar">${initials(u.fullName)}</div>
             <div style="flex:1">
               <div style="font-weight:500">${u.fullName}</div>
               <div style="font-size:12px;color:#888">${u.email}</div>
+              <div style="font-size:12px;color:#aaa">${u.registrationNo || 'No reg no assigned'}</div>
             </div>
             <span class="badge role-${u.role}"
               style="padding:4px 10px;border-radius:20px;font-size:11px">
               ${u.role}
             </span>
+            <div style="margin-left:10px;">
+              <select class="form-input" style="padding:4px 8px;font-size:12px;width:80px" onchange="deleteUserWithState(${u.id}, this.value)">
+                <option value="">Delete...</option>
+                <option value="HOLD">On Hold</option>
+                <option value="OUT">Out</option>
+                <option value="RESIGN">Resign</option>
+              </select>
+            </div>
           </div>`).join('')
                 : '<div class="empty">No users found.</div>';
         } catch(e) { console.error(e); }
     }
 
-    async function createUser() {
-        const fullName = document.getElementById('userName').value.trim();
-        const email    = document.getElementById('userEmail').value.trim();
-        const phone    = document.getElementById('userPhone').value.trim();
-        const password = document.getElementById('userPassword').value;
-        const role     = document.getElementById('userRole').value;
-        if (!fullName || !email || !password) {
-            toast('Name, email and password are required', 'error'); return;
+    async function deleteUserWithState(userId, state) {
+        if (!state) return;
+        
+        if (!confirm('Are you sure you want to delete this user with state: ' + state + '?')) {
+            document.querySelectorAll(`select`)[0].value = '';
+            return;
         }
+
         try {
-            await fetch(`${API}/users`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fullName, email, phone, password, role })
+            const res = await fetch(`${API}/users/${userId}?state=${state}`, {
+                method: 'DELETE'
             });
-            toast('User created!');
-            addNotif('New user added', fullName + ' joined as ' + role, '#1e8449');
-            toggleCreateUser();
+            if (!res.ok) {
+                throw new Error(await res.text());
+            }
+            toast('User deleted with state: ' + state);
             loadUsers();
-        } catch(e) { toast('Failed to create user', 'error'); }
+        } catch (e) {
+            toast(e.message || 'Failed to delete user', 'error');
+        }
+    }
+
+    function clearUserFilters() {
+        document.getElementById('userRegNoFilter').value = '';
+        document.getElementById('userRoleFilter').value = '';
+        loadUsers();
+    }
+
+    function loadProfile() {
+        document.getElementById('profileRegNo').value = currentUser.registrationNo || '';
+        document.getElementById('profileRole').value = currentUser.role || '';
+        document.getElementById('profileName').value = currentUser.fullName || '';
+        document.getElementById('profileEmail').value = currentUser.email || '';
+        document.getElementById('profilePhone').value = currentUser.phone || '';
+        document.getElementById('profilePassword').value = '';
+    }
+
+    async function updateMyProfile() {
+        const fullName = document.getElementById('profileName').value.trim();
+        const email = document.getElementById('profileEmail').value.trim();
+        const phone = document.getElementById('profilePhone').value.trim();
+        const password = document.getElementById('profilePassword').value;
+
+        if (!fullName || !email) {
+            toast('Full name and email are required', 'error');
+            return;
+        }
+
+        try {
+            const updated = await fetch(`${API}/users/${currentUser.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fullName,
+                    email,
+                    phone,
+                    password,
+                    role: currentUser.role,
+                    registrationNo: currentUser.registrationNo
+                })
+            }).then(async res => {
+                if (!res.ok) {
+                    throw new Error(await res.text());
+                }
+                return res.json();
+            });
+
+            currentUser = updated;
+            syncUserHeader();
+            loadProfile();
+            toast('Profile updated!');
+        } catch (e) {
+            toast(e.message || 'Profile update failed', 'error');
+        }
+    }
+
+    async function deleteMyProfile() {
+        if (!confirm('Delete your profile? This cannot be undone.')) return;
+
+        try {
+            const res = await fetch(`${API}/users/${currentUser.id}`, {
+                method: 'DELETE'
+            });
+            if (!res.ok) {
+                throw new Error(await res.text());
+            }
+            toast('Profile deleted');
+            doLogout();
+            toggleAuthMode('signup');
+        } catch (e) {
+            toast(e.message || 'Profile delete failed', 'error');
+        }
+    }
+
+    async function createUser() {
+        // User creation is now disabled - admin can only delete users
+        toast('Admin cannot create users directly', 'error');
     }
 
     function toggleCreateUser() {
-        const f = document.getElementById('createUserForm');
-        f.style.display = f.style.display === 'none' ? 'block' : 'none';
+        // User creation form is now hidden - admin can only delete users
+        toast('User creation is disabled', 'error');
     }
 
     // ── My Registrations (user) ──────────────────────────────
@@ -919,6 +1222,14 @@
 
     function initials(name) {
         return name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    }
+
+    function formatEventDate(eventDate) {
+        return eventDate ? eventDate.substring(0,10) : '–';
+    }
+
+    function formatEventTime(eventDate) {
+        return eventDate ? eventDate.substring(11,16) : '–';
     }
 </script>
 </body>
