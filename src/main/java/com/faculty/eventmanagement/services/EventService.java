@@ -99,6 +99,7 @@ public class EventService implements EventSubject, IEventService {
         existing.setLocation(updatedEvent.getLocation().trim());
         existing.setEventDate(updatedEvent.getEventDate());
         existing.setEventType(updatedEvent.getEventType());
+        existing.setImageUrl(updatedEvent.getImageUrl());
         existing.setMaxAttendees(maxAttendees);
         if (updatedEvent.getStatus() != null) {
             existing.setStatus(updatedEvent.getStatus());

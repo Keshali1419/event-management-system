@@ -21,6 +21,8 @@ public class Event implements Serializable {
     private String location;
     private LocalDateTime eventDate;
     private String eventType;
+    @Lob
+    private String imageUrl;
     private int maxAttendees;
     private int currentAttendees;
 
