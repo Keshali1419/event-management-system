@@ -3,6 +3,7 @@ package com.faculty.eventmanagement.services;
 import com.faculty.eventmanagement.adapter.ExternalEmailAdapter;
 import com.faculty.eventmanagement.adapter.ExternalEmailService;
 import com.faculty.eventmanagement.model.User;
+import com.faculty.eventmanagement.model.UserRole;
 import com.faculty.eventmanagement.repository.UserRepository;
 import com.faculty.eventmanagement.serialization.SessionManager;
 import com.faculty.eventmanagement.serialization.UserSession;
@@ -18,6 +19,28 @@ public class UserService {
     private final SessionManager sessionManager;
 
     public User createUser(User user) {
+        if (user == null) {
+            throw new IllegalArgumentException("User details are required.");
+        }
+
+        String fullName = user.getFullName() == null ? "" : user.getFullName().trim();
+        String email = user.getEmail() == null ? "" : user.getEmail().trim().toLowerCase();
+        String password = user.getPassword() == null ? "" : user.getPassword();
+
+        if (fullName.isEmpty() || email.isEmpty() || password.isEmpty()) {
+            throw new IllegalArgumentException("Full name, email and password are required.");
+        }
+
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("An account already exists for this email.");
+        }
+
+        user.setFullName(fullName);
+        user.setEmail(email);
+        if (user.getRole() == null) {
+            user.setRole(UserRole.STUDENT);
+        }
+
         User saved = userRepository.save(user);
 
         // Adapter pattern — using external email service
@@ -45,7 +68,12 @@ public class UserService {
     }
 
     public User loginWithCredentials(String email, String password) {
-        User user = userRepository.findByEmail(email)
+        String normalizedEmail = email == null ? "" : email.trim().toLowerCase();
+        if (normalizedEmail.isEmpty() || password == null || password.isEmpty()) {
+            throw new RuntimeException("Email and password are required");
+        }
+
+        User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new RuntimeException("No account found with this email"));
 
         if (!user.getPassword().equals(password)) {
