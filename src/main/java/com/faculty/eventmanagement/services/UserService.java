@@ -1,4 +1,4 @@
-package com.faculty.eventmanagement.service;
+package com.faculty.eventmanagement.services;
 
 import com.faculty.eventmanagement.adapter.ExternalEmailAdapter;
 import com.faculty.eventmanagement.adapter.ExternalEmailService;

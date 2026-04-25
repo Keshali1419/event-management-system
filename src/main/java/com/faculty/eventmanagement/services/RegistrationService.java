@@ -1,4 +1,4 @@
-package com.faculty.eventmanagement.service;
+package com.faculty.eventmanagement.services;
 
 import com.faculty.eventmanagement.concurrency.AsyncNotificationService;
 import com.faculty.eventmanagement.concurrency.ThreadSafeRegistrationService;
@@ -17,7 +17,7 @@ public class RegistrationService {
 
     private final RegistrationRepository registrationRepository;
     private final UserService userService;
-    private final com.faculty.eventmanagement.service.EventService eventService;
+    private final com.faculty.eventmanagement.services.EventService eventService;
     private final ThreadSafeRegistrationService threadSafeService;
     private final AsyncNotificationService asyncNotificationService;
 
