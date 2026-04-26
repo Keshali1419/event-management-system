@@ -1,70 +1,93 @@
 package com.faculty.eventmanagement.serialization;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.stereotype.Component;
-import java.io.*;
+
+import java.io.File;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class SessionManager {
 
-    // In-memory session store — thread safe
+
     private final ConcurrentHashMap<Long, UserSession> activeSessions
             = new ConcurrentHashMap<>();
 
     private static final String SESSION_DIR = "sessions/";
 
+
+    private final ObjectMapper objectMapper;
+
     public SessionManager() {
-        // Create sessions directory if it doesn't exist
         new File(SESSION_DIR).mkdirs();
+        this.objectMapper = new ObjectMapper();
+
+        this.objectMapper.registerModule(new JavaTimeModule());
     }
 
-    // Save session to memory + serialize to file
+
     public void saveSession(UserSession session) {
         activeSessions.put(session.getUserId(), session);
 
-        // Serialize to disk
+
         String filePath = SESSION_DIR + "session_"
-                + session.getUserId() + ".ser";
-        try (ObjectOutputStream oos = new ObjectOutputStream(
-                new FileOutputStream(filePath))) {
-            oos.writeObject(session);
+                + session.getUserId() + ".json";
+        try {
+            objectMapper.writeValue(new File(filePath), session);
             System.out.println("[SESSION] Saved session for: "
                     + session.getFullName());
-        } catch (IOException e) {
+        } catch (Exception e) {
             System.err.println("[SESSION] Failed to save session: "
                     + e.getMessage());
         }
     }
 
-    // Load session from memory first, then from file
+
     public UserSession loadSession(Long userId) {
-        // Check memory first
         if (activeSessions.containsKey(userId)) {
             System.out.println("[SESSION] Loaded from memory for userId: "
                     + userId);
             return activeSessions.get(userId);
         }
 
-        // Fall back to file
-        String filePath = SESSION_DIR + "session_" + userId + ".ser";
-        try (ObjectInputStream ois = new ObjectInputStream(
-                new FileInputStream(filePath))) {
-            UserSession session = (UserSession) ois.readObject();
-            activeSessions.put(userId, session);
-            System.out.println("[SESSION] Loaded from file for: "
-                    + session.getFullName());
-            return session;
-        } catch (IOException | ClassNotFoundException e) {
+
+        String filePath = SESSION_DIR + "session_" + userId + ".json";
+        File file = new File(filePath);
+        if (!file.exists()) {
             System.err.println("[SESSION] No session found for userId: "
                     + userId);
             return null;
         }
+
+        try {
+            UserSession session = objectMapper.readValue(file,
+                    UserSession.class);
+
+            // Fix 8.2: Reject expired sessions immediately on load
+            if (session.isExpired()) {
+                System.out.println("[SESSION] Session expired for userId: "
+                        + userId);
+                invalidateSession(userId);
+                return null;
+            }
+
+            activeSessions.put(userId, session);
+            System.out.println("[SESSION] Loaded from file for: "
+                    + session.getFullName());
+            return session;
+        } catch (Exception e) {
+            System.err.println("[SESSION] Failed to load session for userId: "
+                    + userId + " — " + e.getMessage());
+            return null;
+        }
     }
 
-    // Invalidate session on logout
+
     public void invalidateSession(Long userId) {
         activeSessions.remove(userId);
-        File file = new File(SESSION_DIR + "session_" + userId + ".ser");
+        // Fix 8.1: delete .json file instead of .ser
+        File file = new File(SESSION_DIR + "session_" + userId + ".json");
         if (file.exists()) file.delete();
         System.out.println("[SESSION] Session invalidated for userId: "
                 + userId);
