@@ -1,6 +1,7 @@
 package com.faculty.eventmanagement.services;
 
 import com.faculty.eventmanagement.config.EventConfigManager;
+import com.faculty.eventmanagement.exception.ResourceNotFoundException;
 import com.faculty.eventmanagement.model.Event;
 import com.faculty.eventmanagement.model.EventStatus;
 import com.faculty.eventmanagement.observer.EventObserver;
@@ -13,7 +14,9 @@ import org.springframework.stereotype.Service;
 import com.faculty.eventmanagement.observer.EmailEventObserver;
 import com.faculty.eventmanagement.observer.SMSEventObserver;
 import com.faculty.eventmanagement.observer.LogEventObserver;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.module.ResolutionException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,6 +59,7 @@ public class EventService implements EventSubject {
         observers.forEach(observer -> observer.update(event, action));
     }
 
+    @Transactional
     public Event createEvent(Event event) {
         EventConfigManager config = EventConfigManager.getInstance();
 
@@ -89,6 +93,7 @@ public class EventService implements EventSubject {
         return updated;
     }
 
+    @Transactional
     public Event updateEvent(Long id, Event updatedEvent) {
         Event existing = getEventById(id);
 
@@ -120,6 +125,7 @@ public class EventService implements EventSubject {
         return saved;
     }
 
+    @Transactional
     public void deleteEvent(Long id) {
         Event existing = getEventById(id);
         registrationRepository.findByEventId(id).forEach(registrationRepository::delete);
@@ -133,6 +139,6 @@ public class EventService implements EventSubject {
 
     public Event getEventById(Long id) {
         return eventRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Event not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Event not found: " + id));
     }
 }
