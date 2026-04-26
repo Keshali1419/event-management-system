@@ -11,8 +11,8 @@
 
         :root {
             --ink: #32230a;
-            --ink-soft: #3a3a3a;
-            --ink-muted: #8a8a8a;
+            --ink-soft: #573c14;
+            --ink-muted: #595858;
             --ink-ghost: #c4c4c4;
             --paper: #faf9f7;
             --paper-warm: #f3f1ed;
@@ -27,6 +27,7 @@
             --red: #8b1a1a;
             --red-pale: #faeaea;
             --border: #e8e4de;
+            --borderandtext: #976d2f;
             --border-strong: #d0cbc3;
             --shadow-sm: 0 1px 3px rgba(15,15,15,0.06), 0 1px 2px rgba(15,15,15,0.04);
             --shadow-md: 0 4px 16px rgba(15,15,15,0.08), 0 2px 6px rgba(15,15,15,0.05);
@@ -260,7 +261,7 @@
         }
         .nav-brand {
             font-family: 'DM Serif Display', serif;
-            font-size: 17px;
+            font-size: 25px;
             color: var(--ink);
             letter-spacing: -0.2px;
         }
@@ -274,9 +275,9 @@
             border-radius: var(--radius-sm);
             cursor: pointer;
             font-family: 'DM Sans', sans-serif;
-            font-size: 13px;
-            font-weight: 400;
-            color: var(--ink-muted);
+            font-size: 15px;
+            font-weight: 450;
+            color: var(--borderandtext);
             transition: all .15s ease;
             letter-spacing: 0.1px;
         }
@@ -299,20 +300,27 @@
             text-transform: uppercase;
             padding: 3px 9px;
             border-radius: var(--radius-pill);
+            border: 1px solid currentColor;
+
         }
         .nav-reg {
             font-size: 11px;
-            color: var(--ink-muted);
+            color: var(--borderandtext);
             background: var(--paper-warm);
-            border: 1px solid var(--border);
+            border: 1px solid var(--borderandtext);
             padding: 3px 9px;
             border-radius: var(--radius-pill);
             font-family: monospace;
             cursor: pointer;
         }
+        .nav-reg:hover {
+            background: var(--paper-card);
+            transform: scale(1.08);
+        }
+
         .role-ADMIN    { background: var(--red-pale);  color: var(--red);   }
-        .role-STUDENT  { background: var(--blue-pale); color: var(--blue);  }
-        .role-LECTURER { background: var(--green-pale);color: var(--green); }
+        .role-STUDENT  { background: var(--blue-pale); color: var(--blue);   }
+        .role-LECTURER { background: var(--green-pale);color: var(--green);  }
 
         /* ══════════════════════════════════════════════
            APP LAYOUT
@@ -386,6 +394,94 @@
             color: var(--ink);
             letter-spacing: -0.2px;
         }
+        .events-header-right {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .event-types-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(28, 20, 8, 0.42);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 1000;
+        }
+        .event-types-modal {
+            width: min(680px, 100%);
+            max-height: min(80vh, 760px);
+            overflow: hidden;
+            background: var(--paper-card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            flex-direction: column;
+        }
+        .event-types-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--paper);
+        }
+        .event-types-modal-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 22px;
+            color: var(--ink);
+        }
+        .event-types-modal-body {
+            padding: 18px 20px 20px;
+            overflow: auto;
+        }
+        .event-types-modal-tools {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .event-types-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .event-type-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--paper);
+        }
+        .event-type-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--ink);
+        }
+        .event-type-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .event-types-empty {
+            padding: 18px;
+            border: 1px dashed var(--border-strong);
+            border-radius: 12px;
+            color: var(--ink-ghost);
+            font-size: 13px;
+            text-align: center;
+        }
 
         /* ══════════════════════════════════════════════
            BUTTONS
@@ -416,13 +512,15 @@
         }
         .btn-primary:hover { background: var(--ink-soft); border-color: var(--ink-soft); }
 
-        .btn-sm { padding: 5px 13px; font-size: 12px; }
+        .btn-sm { padding: 5px 13px; font-size: 12px;background: var( --paper-warm); border-color: var(--borderandtext); color: var(--borderandtext)}
+        .btn-sm:hover { background: var(--paper-warm); border-color: var(--borderandtext);  background: var(--paper-card);
+            transform: scale(1.08);}
         .btn-accent {
-            background: var(--accent);
-            color: var(--ink);
-            border-color: var(--accent);
+            background: var(--ink);
+            color: var(--paper-card);
+            border-color: var(--ink);
         }
-        .btn-accent:hover { background: var(--accent-deep); border-color: var(--accent-deep); color: #fff; }
+        .btn-accent:hover { background: var(--ink-soft); border-color: var(--ink-soft); }
 
         /* ══════════════════════════════════════════════
            EVENTS GRID (dashboard)
@@ -557,7 +655,7 @@
             display: block;
             font-size: 12px;
             font-weight: 600;
-            color: var(--ink-soft);
+            color: var(--ink);
             margin-bottom: 7px;
             letter-spacing: 0.2px;
         }
@@ -572,7 +670,7 @@
             background: var(--paper);
             outline: none;
             transition: border-color .15s ease, box-shadow .15s ease;
-            -webkit-appearance: none;
+            appearance: auto;
         }
         .form-input:focus {
             border-color: var(--accent);
@@ -871,7 +969,7 @@
                 <div class="form-group">
                     <label class="form-label">Registration number</label>
                     <input class="form-input" id="signupRegNo" type="text"
-                           placeholder="e.g. REG-1A2B3C4D"
+
                            onkeydown="if(event.key==='Enter') doSignup()"/>
                 </div>
                 <div class="form-group">
@@ -925,7 +1023,7 @@
         <div class="nav-links" id="navLinks"></div>
         <div class="nav-right">
             <span class="nav-role" id="navRole"></span>
-            <button class="nav-reg" id="navReg" onclick="showPage('profile')" title="Open profile"></button>
+            <button class="nav-reg" id="navReg" onclick="showPage('profile')" title="Open profile">Profile</button>
             <button class="btn btn-sm" onclick="doLogout()">Sign out</button>
         </div>
     </nav>
@@ -951,22 +1049,6 @@
             </div>
         </div>
 
-        <!-- Event types admin panel -->
-        <div class="admin-types-panel admin-only">
-            <div class="section-header" style="margin-bottom:14px">
-                <span class="section-title">Event types</span>
-                <span class="count-pill">Count: <strong id="eventTypeCount" style="margin-left:4px">0</strong></span>
-            </div>
-            <div class="filters" style="margin-bottom:0">
-                <input class="form-input" id="adminEventTypeInput"
-                       placeholder="New event type name…" style="max-width:280px"/>
-                <button class="btn btn-primary" onclick="addEventType()">+ Add type</button>
-            </div>
-            <div class="type-chip-wrap" id="adminEventTypeList">
-                <span style="font-size:12px;color:var(--ink-ghost)">No event types yet.</span>
-            </div>
-        </div>
-
         <div class="section-header">
             <span class="section-title">Recent events</span>
         </div>
@@ -979,8 +1061,11 @@
     <div class="page" id="events">
         <div class="section-header">
             <span class="section-title">All events</span>
-            <button class="btn btn-primary admin-only" id="newEventBtn"
-                    onclick="showPage('create')">+ New event</button>
+            <div class="events-header-right">
+                <button class="btn btn-primary admin-only" id="newEventBtn"
+                        onclick="showPage('create')">+ New event</button>
+                <button class="btn btn-accent admin-only" onclick="openEventTypesModal()">+ Add event type</button>
+            </div>
         </div>
         <div class="filters">
             <input class="form-input" id="eventNameFilter"
@@ -1140,6 +1225,29 @@
     </div>
 
 </div><!-- end mainApp -->
+
+<div class="event-types-modal-backdrop" id="eventTypesModalBackdrop" onclick="closeEventTypesModal(event)">
+    <div class="event-types-modal" role="dialog" aria-modal="true" aria-labelledby="eventTypesModalTitle" onclick="event.stopPropagation()">
+        <div class="event-types-modal-header">
+            <div>
+                <div class="event-types-modal-title" id="eventTypesModalTitle">Event types</div>
+                <div style="font-size:12px;color:var(--ink-muted)">Manage event categories used in the Events page.</div>
+            </div>
+            <button class="btn" onclick="closeEventTypesModal()">Close</button>
+        </div>
+        <div class="event-types-modal-body">
+            <div class="event-types-modal-tools">
+                <input class="form-input" id="adminEventTypeInput"
+                       placeholder="New event type name…" style="max-width:320px"/>
+                <button class="btn btn-primary" onclick="addEventType()">Add type</button>
+                <span class="count-pill">Count: <strong id="eventTypeCount" style="margin-left:4px">0</strong></span>
+            </div>
+            <div class="event-types-list" id="adminEventTypeList">
+                <div class="event-types-empty">No event types yet.</div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -1343,6 +1451,19 @@
         t.textContent = msg;
         t.className = 'toast show ' + type;
         setTimeout(() => t.className = 'toast', 3000);
+    }
+
+    function openEventTypesModal() {
+        const backdrop = document.getElementById('eventTypesModalBackdrop');
+        if (backdrop) backdrop.style.display = 'flex';
+        loadEventTypes();
+        setTimeout(() => document.getElementById('adminEventTypeInput')?.focus(), 0);
+    }
+
+    function closeEventTypesModal(evt) {
+        if (evt && evt.target !== evt.currentTarget) return;
+        const backdrop = document.getElementById('eventTypesModalBackdrop');
+        if (backdrop) backdrop.style.display = 'none';
     }
 
     // ── Notifications feed ───────────────────────────────────
@@ -1656,12 +1777,14 @@
         if (listEl) {
             listEl.innerHTML = eventTypeItems.length
                 ? eventTypeItems.map(type => `
-                    <span class="type-chip">
-                        ${type.name}
-                        <button class="btn btn-sm" style="padding:2px 8px;font-size:11px" onclick="editEventType(${type.id}, '${(type.name || '').replace(/'/g, "\\'")}')">Edit</button>
-                        <button class="btn btn-sm" style="padding:2px 8px;font-size:11px;color:var(--red);border-color:rgba(139,26,26,0.15)" onclick="deleteEventType(${type.id}, '${(type.name || '').replace(/'/g, "\\'")}')">✕</button>
-                    </span>`).join('')
-                : '<span style="font-size:12px;color:var(--ink-ghost)">No event types yet.</span>';
+                    <div class="event-type-row">
+                        <div class="event-type-name">${type.name}</div>
+                        <div class="event-type-actions">
+                            <button class="btn btn-sm" style="padding:2px 8px;font-size:11px" onclick="editEventType(${type.id}, '${(type.name || '').replace(/'/g, "\\'")}')">Edit</button>
+                            <button class="btn btn-sm" style="padding:2px 8px;font-size:11px;color:var(--red);border-color:rgba(139,26,26,0.15)" onclick="deleteEventType(${type.id}, '${(type.name || '').replace(/'/g, "\\'")}')">Delete</button>
+                        </div>
+                    </div>`).join('')
+                : '<div class="event-types-empty">No event types yet.</div>';
         }
     }
 
