@@ -12,7 +12,7 @@ import java.util.concurrent.CompletableFuture;
 @Service
 public class AsyncNotificationService {
 
-    // @Async runs this in a background thread — caller doesn't wait
+
     @Async("notificationExecutor")
     public CompletableFuture<Void> sendBulkEmailNotifications(
             List<User> users, String message) {
@@ -25,7 +25,7 @@ public class AsyncNotificationService {
                     .createNotification("EMAIL");
             notification.send(user.getEmail(), message);
 
-            // Simulate slight delay per email
+
             try { Thread.sleep(100); }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

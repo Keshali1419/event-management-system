@@ -19,25 +19,21 @@ public class ThreadSafeRegistrationService {
 
     private final EventRepository eventRepository;
     private final RegistrationRepository registrationRepository;
-    private final AsyncNotificationService asyncNotificationService;
 
-    // One lock per event — so different events don't block each other
     private final ConcurrentHashMap<Long, ReentrantLock> eventLocks
             = new ConcurrentHashMap<>();
 
     public Registration registerSafely(User user, Event event) {
 
-        // Get or create a lock for this specific event
         ReentrantLock lock = eventLocks.computeIfAbsent(
                 event.getId(), id -> new ReentrantLock());
 
-        lock.lock();  // only one thread enters per event at a time
+        lock.lock();
         try {
             System.out.println("[THREAD SAFE] Thread "
                     + Thread.currentThread().getName()
                     + " acquired lock for event: " + event.getId());
 
-            // Double check availability inside the lock
             Event freshEvent = eventRepository.findById(event.getId())
                     .orElseThrow(() -> new RuntimeException("Event not found"));
 
@@ -47,12 +43,13 @@ public class ThreadSafeRegistrationService {
                         "Event is fully booked: " + freshEvent.getTitle());
             }
 
-            if (registrationRepository.existsByUserIdAndEventId(user.getId(), freshEvent.getId())) {
+            if (registrationRepository.existsByUserIdAndEventId(
+                    user.getId(), freshEvent.getId())) {
                 throw new RuntimeException(
-                        "User is already registered for this event: " + freshEvent.getTitle());
+                        "User is already registered for this event: "
+                                + freshEvent.getTitle());
             }
 
-            // Template method handles the actual registration steps
             EventRegistrationTemplate template
                     = new StandardEventRegistration();
             Registration registration = template.register(user, freshEvent);
@@ -68,9 +65,14 @@ public class ThreadSafeRegistrationService {
             return saved;
 
         } finally {
-            lock.unlock();  // always unlock even if exception thrown
+            lock.unlock();
             System.out.println("[THREAD SAFE] Lock released for event: "
                     + event.getId());
         }
+    }
+
+
+    public void removeLock(Long eventId) {
+        eventLocks.remove(eventId);
     }
 }

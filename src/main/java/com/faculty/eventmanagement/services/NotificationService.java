@@ -7,13 +7,13 @@ import org.springframework.stereotype.Service;
 @Service
 public class NotificationService {
 
-    // Uses the Factory pattern to send any type of notification
+
     public void sendNotification(String type, String recipient, String message) {
         Notification notification = NotificationFactory.createNotification(type);
         notification.send(recipient, message);
     }
 
-    // Convenience methods
+
     public void sendEmail(String recipient, String message) {
         sendNotification("EMAIL", recipient, message);
     }
