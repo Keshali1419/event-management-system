@@ -1,13 +1,13 @@
 package com.faculty.eventmanagement.serialization;
 
 import com.faculty.eventmanagement.model.UserRole;
-import java.io.Serializable;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.LocalDateTime;
 
-public class UserSession implements Serializable {
 
-    // serialVersionUID tracks class version changes
-    private static final long serialVersionUID = 1L;
+public class UserSession {
 
     private Long userId;
     private String fullName;
@@ -16,24 +16,43 @@ public class UserSession implements Serializable {
     private LocalDateTime loginTime;
     private boolean isActive;
 
-    public UserSession(Long userId, String fullName,
-                       String email, UserRole role) {
-        this.userId = userId;
-        this.fullName = fullName;
-        this.email = email;
-        this.role = role;
+
+    @JsonCreator
+    public UserSession(
+            @JsonProperty("userId")    Long userId,
+            @JsonProperty("fullName")  String fullName,
+            @JsonProperty("email")     String email,
+            @JsonProperty("role")      UserRole role) {
+        this.userId    = userId;
+        this.fullName  = fullName;
+        this.email     = email;
+        this.role      = role;
         this.loginTime = LocalDateTime.now();
-        this.isActive = true;
+        this.isActive  = true;
     }
 
-    // Getters and Setters
-    public Long getUserId() { return userId; }
-    public String getFullName() { return fullName; }
-    public String getEmail() { return email; }
-    public UserRole getRole() { return role; }
-    public LocalDateTime getLoginTime() { return loginTime; }
-    public boolean isActive() { return isActive; }
+
+    public boolean isExpired() {
+        return LocalDateTime.now().isAfter(loginTime.plusHours(24));
+    }
+
+
+    public Long getUserId()            { return userId; }
+    public String getFullName()        { return fullName; }
+    public String getEmail()           { return email; }
+    public UserRole getRole()          { return role; }
+    public LocalDateTime getLoginTime(){ return loginTime; }
+    public boolean isActive()          { return isActive; }
     public void setActive(boolean active) { isActive = active; }
+
+
+    public void setLoginTime(LocalDateTime loginTime) {
+        this.loginTime = loginTime;
+    }
+    public void setUserId(Long userId)      { this.userId = userId; }
+    public void setFullName(String name)    { this.fullName = name; }
+    public void setEmail(String email)      { this.email = email; }
+    public void setRole(UserRole role)      { this.role = role; }
 
     @Override
     public String toString() {
