@@ -16,8 +16,10 @@ public class User implements Serializable {
     private Long id;
 
     private String fullName;
+    @Column(unique = true)
     private String email;
     private String phone;
+    @Column(nullable = false)
     private String password;
     private String registrationNo;
 

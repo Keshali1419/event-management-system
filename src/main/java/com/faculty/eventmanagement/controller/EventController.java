@@ -1,7 +1,7 @@
 package com.faculty.eventmanagement.controller;
 
 import com.faculty.eventmanagement.model.Event;
-import com.faculty.eventmanagement.services.EventService;
+import com.faculty.eventmanagement.decorator.IEventService;
 import com.faculty.eventmanagement.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.format.DateTimeParseException;
 import java.util.UUID;
 import java.util.List;
 import com.faculty.eventmanagement.model.EventStatus;
@@ -23,7 +24,7 @@ import com.faculty.eventmanagement.serialization.UserSession;
 @RequiredArgsConstructor
 public class EventController {
 
-    private final EventService eventService;
+    private final IEventService eventService;
     private final UserService userService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -35,22 +36,32 @@ public class EventController {
             @RequestParam(required = false) String eventType,
             @RequestParam int maxAttendees,
             @RequestParam(required = false) MultipartFile image,
-            @RequestParam Long actorUserId) throws Exception {
+            @RequestParam Long actorUserId) {
+
         ResponseEntity<String> authResponse = ensureAdmin(actorUserId);
-        if (authResponse != null) {
-            return authResponse;
+        if (authResponse != null) return authResponse;
+
+        LocalDateTime parsedDate;
+        try {
+            parsedDate = LocalDateTime.parse(eventDate);
+        } catch (DateTimeParseException e){
+            return ResponseEntity.badRequest().body("Invalid date format. Use ISO-8601: yyyy-MM-ddTHH:mm");
         }
 
         Event event = new Event();
         event.setTitle(title);
         event.setDescription(description);
         event.setLocation(location);
-        event.setEventDate(LocalDateTime.parse(eventDate));
+        event.setEventDate(parsedDate);
         event.setEventType(eventType);
         event.setMaxAttendees(maxAttendees);
 
         if (image != null && !image.isEmpty()) {
-            event.setImageUrl(saveEventImage(image));
+            try {
+                event.setImageUrl(saveEventImage(image));
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body("Failed to upload image: " + e.getMessage());
+            }
         }
 
         return ResponseEntity.ok(eventService.createEvent(event));
@@ -72,11 +83,14 @@ public class EventController {
             @RequestParam Long actorUserId,
             @RequestParam String status) {
         ResponseEntity<String> authResponse = ensureAdmin(actorUserId);
-        if (authResponse != null) {
+        if (authResponse != null)
             return authResponse;
+        try {
+            EventStatus eventStatus = EventStatus.valueOf(status.toUpperCase());
+            return ResponseEntity.ok(eventService.updateEventStatus(id, eventStatus));
+        }catch (IllegalArgumentException e){
+            return ResponseEntity.badRequest().body("Invalid status value: " + status);
         }
-        EventStatus eventStatus = EventStatus.valueOf(status.toUpperCase());
-        return ResponseEntity.ok(eventService.updateEventStatus(id, eventStatus));
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -89,22 +103,32 @@ public class EventController {
             @RequestParam(required = false) String eventType,
             @RequestParam int maxAttendees,
             @RequestParam(required = false) MultipartFile image,
-            @RequestParam Long actorUserId) throws Exception {
+            @RequestParam Long actorUserId) {
+
         ResponseEntity<String> authResponse = ensureAdmin(actorUserId);
-        if (authResponse != null) {
-            return authResponse;
+        if (authResponse != null) return authResponse;
+
+        LocalDateTime parsedDate;
+        try {
+            parsedDate = LocalDateTime.parse(eventDate);
+        } catch (DateTimeParseException e) {
+            return ResponseEntity.badRequest().body("Invalid date format. Use ISO-8601: yyyy-MM-ddTHH:mm");
         }
 
         Event event = new Event();
         event.setTitle(title);
         event.setDescription(description);
         event.setLocation(location);
-        event.setEventDate(LocalDateTime.parse(eventDate));
+        event.setEventDate(parsedDate);
         event.setEventType(eventType);
         event.setMaxAttendees(maxAttendees);
 
         if (image != null && !image.isEmpty()) {
-            event.setImageUrl(saveEventImage(image));
+            try {
+                event.setImageUrl(saveEventImage(image));
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body("Failed to upload image: " + e.getMessage());
+            }
         }
 
         return ResponseEntity.ok(eventService.updateEvent(id, event));
@@ -134,14 +158,23 @@ public class EventController {
     }
 
     private String saveEventImage(MultipartFile image) throws Exception {
-        Path uploadDir = Path.of("uploads");
-        Files.createDirectories(uploadDir);
-
         String originalName = image.getOriginalFilename() == null ? "event-image" : image.getOriginalFilename();
+
+        // Validate file extension
+        String ext = originalName.contains(".")
+                ? originalName.substring(originalName.lastIndexOf('.') + 1).toLowerCase()
+                : "";
+        List<String> allowed = List.of("jpg", "jpeg", "png", "gif", "webp");
+        if (!allowed.contains(ext)) {
+            throw new IllegalArgumentException("Only image files are allowed (jpg, jpeg, png, gif, webp).");
+        }
+
         String safeName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
         String storedFileName = UUID.randomUUID() + "_" + safeName;
-        Path targetPath = uploadDir.resolve(storedFileName);
 
+        Path uploadDir = Path.of("uploads");
+        Files.createDirectories(uploadDir);
+        Path targetPath = uploadDir.resolve(storedFileName);
         Files.copy(image.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
         return "/uploads/" + storedFileName;
     }

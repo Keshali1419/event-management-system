@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -25,8 +26,7 @@ public class UserController {
     public ResponseEntity<?> signup(@RequestBody User user) {
         try {
             if (user.getRole() == UserRole.ADMIN && userService.hasAdminAccount()) {
-                return ResponseEntity.badRequest()
-                        .body("Admin sign up is allowed only when no admin account exists.");
+                return ResponseEntity.badRequest().body("Admin sign up is allowed only when no admin account exists.");
             }
             if (user.getRegistrationNo() == null || user.getRegistrationNo().trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("Registration no is required for sign up.");
@@ -64,7 +64,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody java.util.Map<String, String> credentials) {
+    public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
         try {
             User user = userService.loginWithCredentials(
                     credentials.get("email"),
@@ -74,11 +74,6 @@ public class UserController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(401).body(e.getMessage());
         }
-    }
-
-    @PostMapping("/{id}/login")
-    public ResponseEntity<UserSession> login(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.login(id));
     }
 
     @PostMapping("/{id}/logout")

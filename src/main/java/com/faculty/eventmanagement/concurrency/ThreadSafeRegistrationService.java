@@ -47,6 +47,11 @@ public class ThreadSafeRegistrationService {
                         "Event is fully booked: " + freshEvent.getTitle());
             }
 
+            if (registrationRepository.existsByUserIdAndEventId(user.getId(), freshEvent.getId())) {
+                throw new RuntimeException(
+                        "User is already registered for this event: " + freshEvent.getTitle());
+            }
+
             // Template method handles the actual registration steps
             EventRegistrationTemplate template
                     = new StandardEventRegistration();
