@@ -482,6 +482,60 @@
             font-size: 13px;
             text-align: center;
         }
+        .dialog-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(28, 20, 8, 0.45);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 1200;
+        }
+        .dialog-box {
+            width: min(460px, 100%);
+            background: var(--paper-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+        .dialog-head {
+            padding: 18px 20px 12px;
+        }
+        .dialog-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 26px;
+            color: var(--ink);
+            line-height: 1.1;
+        }
+        .dialog-body {
+            padding: 0 20px 14px;
+            color: var(--ink-soft);
+            font-size: 14px;
+        }
+        .dialog-input {
+            margin-top: 12px;
+        }
+        .dialog-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 12px 20px 18px;
+            border-top: 1px solid var(--border);
+            background: var(--paper);
+        }
+        .btn-danger {
+            background: var(--red);
+            border-color: var(--red);
+            color: #fff;
+        }
+        .btn-danger:hover {
+            background: #741313;
+            border-color: #741313;
+        }
 
         /* ══════════════════════════════════════════════
            BUTTONS
@@ -1028,6 +1082,22 @@
         </div>
     </nav>
 
+    <div class="dialog-backdrop" id="appDialogBackdrop" onclick="onDialogBackdropClick(event)">
+        <div class="dialog-box" role="dialog" aria-modal="true" aria-labelledby="appDialogTitle" onclick="event.stopPropagation()">
+            <div class="dialog-head">
+                <div class="dialog-title" id="appDialogTitle">Confirm action</div>
+            </div>
+            <div class="dialog-body">
+                <div id="appDialogMessage">Are you sure?</div>
+                <input class="form-input dialog-input" id="appDialogInput" type="text" style="display:none"/>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn" id="appDialogCancelBtn" onclick="closeAppDialog('cancel')">Cancel</button>
+                <button class="btn btn-primary" id="appDialogConfirmBtn" onclick="closeAppDialog('confirm')">OK</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ── DASHBOARD ── -->
     <div class="page" id="dashboard">
         <div class="metrics">
@@ -1261,6 +1331,7 @@
     let authMode = 'login';
     let eventTypes = [];
     let eventTypeItems = [];
+    let appDialogResolver = null;
 
     // ── Login / Logout ───────────────────────────────────────
     function toggleAuthMode(mode) {
@@ -1465,6 +1536,102 @@
         const backdrop = document.getElementById('eventTypesModalBackdrop');
         if (backdrop) backdrop.style.display = 'none';
     }
+
+    function openAppDialog(options = {}) {
+        return new Promise(resolve => {
+            appDialogResolver = resolve;
+
+            const backdrop = document.getElementById('appDialogBackdrop');
+            const titleEl = document.getElementById('appDialogTitle');
+            const messageEl = document.getElementById('appDialogMessage');
+            const inputEl = document.getElementById('appDialogInput');
+            const cancelBtn = document.getElementById('appDialogCancelBtn');
+            const confirmBtn = document.getElementById('appDialogConfirmBtn');
+
+            const {
+                title = 'Confirm action',
+                message = 'Are you sure?',
+                confirmText = 'OK',
+                cancelText = 'Cancel',
+                danger = false,
+                showInput = false,
+                inputValue = '',
+                inputPlaceholder = ''
+            } = options;
+
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            cancelBtn.textContent = cancelText;
+            confirmBtn.textContent = confirmText;
+            confirmBtn.className = danger ? 'btn btn-danger' : 'btn btn-primary';
+
+            inputEl.style.display = showInput ? 'block' : 'none';
+            inputEl.value = showInput ? inputValue : '';
+            inputEl.placeholder = inputPlaceholder;
+
+            backdrop.style.display = 'flex';
+            setTimeout(() => (showInput ? inputEl : confirmBtn).focus(), 0);
+        });
+    }
+
+    function closeAppDialog(action) {
+        const backdrop = document.getElementById('appDialogBackdrop');
+        const inputEl = document.getElementById('appDialogInput');
+        if (backdrop) backdrop.style.display = 'none';
+
+        if (appDialogResolver) {
+            const resolver = appDialogResolver;
+            appDialogResolver = null;
+            resolver({ action, value: inputEl.value });
+        }
+    }
+
+    function onDialogBackdropClick(event) {
+        if (event.target === event.currentTarget) {
+            closeAppDialog('cancel');
+        }
+    }
+
+    async function appConfirm(message, options = {}) {
+        const result = await openAppDialog({
+            title: options.title || 'Confirm action',
+            message,
+            confirmText: options.confirmText || 'OK',
+            cancelText: options.cancelText || 'Cancel',
+            danger: Boolean(options.danger)
+        });
+        return result.action === 'confirm';
+    }
+
+    async function appPrompt(message, value = '', options = {}) {
+        const result = await openAppDialog({
+            title: options.title || 'Enter value',
+            message,
+            confirmText: options.confirmText || 'Save',
+            cancelText: options.cancelText || 'Cancel',
+            showInput: true,
+            inputValue: value,
+            inputPlaceholder: options.inputPlaceholder || ''
+        });
+        if (result.action !== 'confirm') return null;
+        return result.value;
+    }
+
+    document.addEventListener('keydown', e => {
+        const backdrop = document.getElementById('appDialogBackdrop');
+        if (!backdrop || backdrop.style.display !== 'flex') return;
+
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            closeAppDialog('cancel');
+            return;
+        }
+
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            closeAppDialog('confirm');
+        }
+    });
 
     // ── Notifications feed ───────────────────────────────────
     function addNotif(title, desc, color) {
@@ -1705,7 +1872,12 @@
             toast('Only Admin can delete events', 'error');
             return;
         }
-        if (!confirm(`Delete event "${title}"?`)) return;
+        const ok = await appConfirm(`Delete event "${title}"?`, {
+            title: 'Delete event',
+            confirmText: 'Delete',
+            danger: true
+        });
+        if (!ok) return;
 
         try {
             const res = await fetch(`${API}/events/${id}?actorUserId=${currentUser.id}`, { method: 'DELETE' });
@@ -1807,7 +1979,11 @@
     }
 
     async function editEventType(id, currentName) {
-        const nextName = prompt('Edit event type name', currentName);
+        const nextName = await appPrompt('Edit event type name', currentName, {
+            title: 'Edit event type',
+            confirmText: 'Save',
+            inputPlaceholder: 'Type a new name'
+        });
         if (nextName === null) return;
         const name = nextName.trim();
         if (!name) { toast('Event type name is required', 'error'); return; }
@@ -1824,7 +2000,12 @@
     }
 
     async function deleteEventType(id, name) {
-        if (!confirm(`Delete event type "${name}"?`)) return;
+        const ok = await appConfirm(`Delete event type "${name}"?`, {
+            title: 'Delete event type',
+            confirmText: 'Delete',
+            danger: true
+        });
+        if (!ok) return;
         try {
             const res = await fetch(`${API}/event-types/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error(await res.text());
@@ -1878,7 +2059,12 @@
 
     async function deleteUserWithState(userId, state) {
         if (!state) return;
-        if (!confirm('Are you sure you want to delete this user with state: ' + state + '?')) {
+        const ok = await appConfirm('Are you sure you want to delete this user with state: ' + state + '?', {
+            title: 'Delete user',
+            confirmText: 'Delete',
+            danger: true
+        });
+        if (!ok) {
             document.querySelectorAll(`select`)[0].value = '';
             return;
         }
@@ -1935,7 +2121,12 @@
     }
 
     async function deleteMyProfile() {
-        if (!confirm('Delete your profile? This cannot be undone.')) return;
+        const ok = await appConfirm('Delete your profile? This cannot be undone.', {
+            title: 'Delete profile',
+            confirmText: 'Delete profile',
+            danger: true
+        });
+        if (!ok) return;
         try {
             const res = await fetch(`${API}/users/${currentUser.id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error(await res.text());
