@@ -1023,23 +1023,26 @@
                 <div class="form-group">
                     <label class="form-label">Registration number</label>
                     <input class="form-input" id="signupRegNo" type="text"
+                           placeholder="e.g. STU001"
+                           maxlength="6"
 
                            onkeydown="if(event.key==='Enter') doSignup()"/>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Full name</label>
-                    <input class="form-input" id="signupName" placeholder="e.g. Kasun Perera"
+                    <input class="form-input" id="signupName" placeholder="e.g. Kasun Perera (capital first letters)"
                            onkeydown="if(event.key==='Enter') doSignup()"/>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Phone</label>
-                        <input class="form-input" id="signupPhone" placeholder="0771234567"
+                        <input class="form-input" id="signupPhone" placeholder="e.g. 0771234567 (10 digits)"
                                onkeydown="if(event.key==='Enter') doSignup()"/>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Role</label>
-                        <select class="form-input" id="signupRole">
+                        <select class="form-input" id="signupRole" onchange="syncSignupRegNoPlaceholder()">
+                            <option value="">Select a role</option>
                             <option value="STUDENT">Student</option>
                             <option value="LECTURER">Lecturer</option>
                             <option value="ADMIN">Admin</option>
@@ -1055,7 +1058,7 @@
                 <div class="form-group">
                     <label class="form-label">Password</label>
                     <input class="form-input" id="signupPassword" type="password"
-                           placeholder="Create a password"
+                           placeholder="Min 8 chars with uppercase, lowercase, number, special"
                            onkeydown="if(event.key==='Enter') doSignup()"/>
                 </div>
                 <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px 18px"
@@ -1349,6 +1352,36 @@
 
         document.getElementById('authError').style.display = 'none';
         document.getElementById('authInfo').style.display = 'none';
+
+        if (!isLogin) {
+            syncSignupRegNoPlaceholder();
+        }
+    }
+
+    function registrationPatternForRole(role) {
+        switch (role) {
+            case 'LECTURER': return /^LEC\d{3}$/;
+            case 'ADMIN': return /^ADM\d{3}$/;
+            case 'STUDENT':
+            default: return /^STU\d{3}$/;
+        }
+    }
+
+    function registrationExampleForRole(role) {
+        switch (role) {
+            case 'LECTURER': return 'LEC001';
+            case 'ADMIN': return 'ADM001';
+            case 'STUDENT':
+            default: return 'STU001';
+        }
+    }
+
+    function syncSignupRegNoPlaceholder() {
+        const role = document.getElementById('signupRole').value;
+        const regInput = document.getElementById('signupRegNo');
+        const example = registrationExampleForRole(role);
+        regInput.placeholder = `e.g. ${example}`;
+        regInput.title = `Use ${example} format for selected role`;
     }
 
     async function doLogin() {
@@ -1400,8 +1433,44 @@
         errBox.style.display = 'none';
         infoBox.style.display = 'none';
 
-        if (!registrationNo || !fullName || !email || !password || !role) {
-            errBox.textContent = 'Registration no, full name, email, role and password are required.';
+        if (!registrationNo || !fullName || !phone || !email || !password || !role) {
+            errBox.textContent = 'Registration no, full name, phone, email, role and password are required.';
+            errBox.style.display = 'block';
+            return;
+        }
+
+        const registrationPattern = registrationPatternForRole(role);
+        const registrationExample = registrationExampleForRole(role);
+        if (!registrationPattern.test(registrationNo.toUpperCase())) {
+            errBox.textContent = `Registration no must follow ${registrationExample} format for ${role.toLowerCase()}.`;
+            errBox.style.display = 'block';
+            return;
+        }
+
+        const namePattern = /^[A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*)*$/;
+        if (!namePattern.test(fullName)) {
+            errBox.textContent = 'Full name must start each word with a capital letter (e.g. Kasun Perera).';
+            errBox.style.display = 'block';
+            return;
+        }
+
+        const phonePattern = /^\d{10}$/;
+        if (!phonePattern.test(phone)) {
+            errBox.textContent = 'Phone number must contain exactly 10 digits.';
+            errBox.style.display = 'block';
+            return;
+        }
+
+        const emailPattern = /^[a-z]+@faculty\.edu$/;
+        if (!emailPattern.test(email.toLowerCase())) {
+            errBox.textContent = 'Email must follow this format: firstname@faculty.edu';
+            errBox.style.display = 'block';
+            return;
+        }
+
+        const strongPasswordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+        if (!strongPasswordPattern.test(password)) {
+            errBox.textContent = 'Password must be at least 8 characters with uppercase, lowercase, number and special character.';
             errBox.style.display = 'block';
             return;
         }
@@ -1410,7 +1479,14 @@
             const res = await fetch(`${API}/users/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ registrationNo, fullName, email, phone, password, role })
+                body: JSON.stringify({
+                    registrationNo: registrationNo.toUpperCase(),
+                    fullName,
+                    email: email.toLowerCase(),
+                    phone,
+                    password,
+                    role
+                })
             });
 
             if (!res.ok) {
@@ -2231,6 +2307,8 @@
         };
         reader.readAsDataURL(file);
     });
+
+    syncSignupRegNoPlaceholder();
 </script>
 </body>
 </html>
