@@ -1,7 +1,9 @@
 package com.faculty.eventmanagement.controller;
 
 import com.faculty.eventmanagement.model.Registration;
+import com.faculty.eventmanagement.serialization.UserSession;
 import com.faculty.eventmanagement.services.RegistrationService;
+import com.faculty.eventmanagement.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,11 +16,20 @@ import java.util.List;
 public class RegistrationController {
 
     private final RegistrationService registrationService;
+    private final UserService userService;
 
     @PostMapping
     public ResponseEntity<?> register(
             @RequestParam Long userId,
             @RequestParam Long eventId) {
+
+        UserSession session = userService.getSession(userId);
+        if (session == null || !session.isActive()) {
+            return ResponseEntity.status(401).body("Please login first.");
+        }
+        if (!session.getUserId().equals(userId)) {
+            return ResponseEntity.status(403).body("You can only register yourself if you are logged in.");
+        }
         try {
             return ResponseEntity.ok(
                     registrationService.registerUserForEvent(userId, eventId));
