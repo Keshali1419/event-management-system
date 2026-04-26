@@ -98,6 +98,14 @@ public class EventService implements EventSubject {
         existing.setEventDate(updatedEvent.getEventDate());
         existing.setEventType(updatedEvent.getEventType());
 
+        if (updatedEvent.getImageUrl() != null) {
+            existing.setImageUrl(updatedEvent.getImageUrl());
+        }
+
+        if (updatedEvent.getImage() != null) {
+            existing.setImage(updatedEvent.getImage());
+        }
+
         if (updatedEvent.getMaxAttendees() < existing.getCurrentAttendees()) {
             throw new IllegalArgumentException("Max attendees cannot be less than current attendees.");
         }

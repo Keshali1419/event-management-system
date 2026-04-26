@@ -24,6 +24,12 @@ public class Event implements Serializable {
     private int maxAttendees;
     private int currentAttendees;
 
+    private String imageUrl;
+
+    @Lob
+    @Column(columnDefinition = "LONGBLOB")
+    private byte[] image;
+
 
     @Enumerated(EnumType.STRING)
     private EventStatus status;
