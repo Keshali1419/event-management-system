@@ -2,7 +2,7 @@ package com.faculty.eventmanagement.config;
 
 public class EventConfigManager {
 
-    private static EventConfigManager instance;
+    private static volatile EventConfigManager instance;
 
     private String systemName;
     private int maxAttendeesPerEvent;
