@@ -12,6 +12,7 @@ import com.faculty.eventmanagement.repository.UserRepository;
 import com.faculty.eventmanagement.serialization.SessionManager;
 import com.faculty.eventmanagement.serialization.UserSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -24,6 +25,7 @@ public class UserService {
     private final EventRepository eventRepository;
     private final RegistrationRepository registrationRepository;
     private final SessionManager sessionManager;
+    private final PasswordEncoder passwordEncoder;
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[a-z]+@faculty\\.edu$");
     private static final Pattern PHONE_PATTERN = Pattern.compile("^\\d{10}$");
@@ -84,6 +86,7 @@ public class UserService {
         user.setPhone(phone);
         user.setRole(role);
         user.setRegistrationNo(registrationNo);
+        user.setPassword(passwordEncoder.encode(password));
 
         User saved = userRepository.save(user);
 
@@ -132,7 +135,10 @@ public class UserService {
         existing.setPhone(phone.isEmpty() ? null : phone);
 
         if (updatedUser.getPassword() != null && !updatedUser.getPassword().isBlank()) {
-            existing.setPassword(updatedUser.getPassword());
+            if (!STRONG_PASSWORD_PATTERN.matcher(updatedUser.getPassword()).matches()) {
+                throw new IllegalArgumentException("Password must be at least 8 characters and include uppercase, lowercase, number and special character.");
+            }
+            existing.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
         }
 
         return userRepository.save(existing);
@@ -189,7 +195,7 @@ public class UserService {
         User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new RuntimeException("No account found with this email"));
 
-        if (!user.getPassword().equals(password)) {
+        if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new RuntimeException("Incorrect password");
         }
 
