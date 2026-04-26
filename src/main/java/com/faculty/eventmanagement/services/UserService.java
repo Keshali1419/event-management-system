@@ -90,8 +90,7 @@ public class UserService {
 
         User saved = userRepository.save(user);
 
-        // Adapter pattern — using external email service
-        // through our Notification interface
+
         ExternalEmailAdapter emailAdapter = new ExternalEmailAdapter(
                 new ExternalEmailService());
         emailAdapter.send(saved.getEmail(),
@@ -173,7 +172,7 @@ public class UserService {
         userRepository.delete(user);
     }
 
-    // Simulate login — creates and serializes a session
+
     public UserSession login(Long userId) {
         User user = getUserById(userId);
         UserSession session = new UserSession(
@@ -199,7 +198,7 @@ public class UserService {
             throw new RuntimeException("Incorrect password");
         }
 
-        // Create and save session using our Serialization pattern
+
         UserSession session = new UserSession(
                 user.getId(),
                 user.getFullName(),
@@ -211,7 +210,7 @@ public class UserService {
         return user;
     }
 
-    // Simulate logout — invalidates session
+
     public void logout(Long userId) {
         sessionManager.invalidateSession(userId);
     }

@@ -28,15 +28,15 @@ public class EventService implements EventSubject, IEventService {
     private final RegistrationRepository registrationRepository;
     private final NotificationService notificationService;
 
-    // Observer pattern — list of all observers
+
     private final List<EventObserver> observers = new ArrayList<>();
 
-    // Inject all observers automatically
+
     private final EmailEventObserver emailEventObserver;
     private final SMSEventObserver smsEventObserver;
     private final LogEventObserver logEventObserver;
 
-    // Register all observers when service starts
+
     @PostConstruct
     public void initObservers() {
         addObserver(emailEventObserver);
@@ -71,7 +71,7 @@ public class EventService implements EventSubject, IEventService {
         event.setCurrentAttendees(0);
         Event saved = eventRepository.save(event);
 
-        // Notify all observers that a new event was created
+
         notifyObservers(saved, "EVENT_CREATED");
 
         notificationService.sendEmail(
@@ -88,7 +88,7 @@ public class EventService implements EventSubject, IEventService {
         event.setStatus(newStatus);
         Event updated = eventRepository.save(event);
 
-        // Notify all observers that status changed
+
         notifyObservers(updated, "STATUS_CHANGED");
 
         return updated;

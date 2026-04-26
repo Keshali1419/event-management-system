@@ -25,11 +25,11 @@ public class RegistrationService {
         User user = userService.getUserById(userId);
         Event event = eventService.getEventById(eventId);
 
-        // Thread safe registration using ReentrantLock
+
         Registration registration = threadSafeService
                 .registerSafely(user, event);
 
-        // Send confirmation async — user doesn't wait for this
+
         asyncNotificationService.sendBulkEmailNotifications(
                 List.of(user),
                 "You have successfully registered for: "
