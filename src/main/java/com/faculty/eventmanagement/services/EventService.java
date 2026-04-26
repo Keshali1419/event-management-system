@@ -6,6 +6,7 @@ import com.faculty.eventmanagement.model.EventStatus;
 import com.faculty.eventmanagement.observer.EventObserver;
 import com.faculty.eventmanagement.observer.EventSubject;
 import com.faculty.eventmanagement.repository.EventRepository;
+import com.faculty.eventmanagement.repository.RegistrationRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import java.util.List;
 public class EventService implements EventSubject {
 
     private final EventRepository eventRepository;
+    private final RegistrationRepository registrationRepository;
     private final NotificationService notificationService;
 
     // Observer pattern — list of all observers
@@ -85,6 +87,44 @@ public class EventService implements EventSubject {
         notifyObservers(updated, "STATUS_CHANGED");
 
         return updated;
+    }
+
+    public Event updateEvent(Long id, Event updatedEvent) {
+        Event existing = getEventById(id);
+
+        existing.setTitle(updatedEvent.getTitle());
+        existing.setDescription(updatedEvent.getDescription());
+        existing.setLocation(updatedEvent.getLocation());
+        existing.setEventDate(updatedEvent.getEventDate());
+        existing.setEventType(updatedEvent.getEventType());
+
+        if (updatedEvent.getImageUrl() != null) {
+            existing.setImageUrl(updatedEvent.getImageUrl());
+        }
+
+        if (updatedEvent.getImage() != null) {
+            existing.setImage(updatedEvent.getImage());
+        }
+
+        if (updatedEvent.getMaxAttendees() < existing.getCurrentAttendees()) {
+            throw new IllegalArgumentException("Max attendees cannot be less than current attendees.");
+        }
+        existing.setMaxAttendees(updatedEvent.getMaxAttendees());
+
+        if (updatedEvent.getStatus() != null) {
+            existing.setStatus(updatedEvent.getStatus());
+        }
+
+        Event saved = eventRepository.save(existing);
+        notifyObservers(saved, "EVENT_UPDATED");
+        return saved;
+    }
+
+    public void deleteEvent(Long id) {
+        Event existing = getEventById(id);
+        registrationRepository.findByEventId(id).forEach(registrationRepository::delete);
+        eventRepository.delete(existing);
+        notifyObservers(existing, "EVENT_DELETED");
     }
 
     public List<Event> getAllEvents() {
