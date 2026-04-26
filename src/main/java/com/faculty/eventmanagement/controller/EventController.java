@@ -158,14 +158,23 @@ public class EventController {
     }
 
     private String saveEventImage(MultipartFile image) throws Exception {
-        Path uploadDir = Path.of("uploads");
-        Files.createDirectories(uploadDir);
-
         String originalName = image.getOriginalFilename() == null ? "event-image" : image.getOriginalFilename();
+
+        // Validate file extension
+        String ext = originalName.contains(".")
+                ? originalName.substring(originalName.lastIndexOf('.') + 1).toLowerCase()
+                : "";
+        List<String> allowed = List.of("jpg", "jpeg", "png", "gif", "webp");
+        if (!allowed.contains(ext)) {
+            throw new IllegalArgumentException("Only image files are allowed (jpg, jpeg, png, gif, webp).");
+        }
+
         String safeName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
         String storedFileName = UUID.randomUUID() + "_" + safeName;
-        Path targetPath = uploadDir.resolve(storedFileName);
 
+        Path uploadDir = Path.of("uploads");
+        Files.createDirectories(uploadDir);
+        Path targetPath = uploadDir.resolve(storedFileName);
         Files.copy(image.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
         return "/uploads/" + storedFileName;
     }
