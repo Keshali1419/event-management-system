@@ -1,6 +1,7 @@
 package com.faculty.eventmanagement.services;
 
 import com.faculty.eventmanagement.config.EventConfigManager;
+import com.faculty.eventmanagement.decorator.IEventService;
 import com.faculty.eventmanagement.exception.ResourceNotFoundException;
 import com.faculty.eventmanagement.model.Event;
 import com.faculty.eventmanagement.model.EventStatus;
@@ -16,13 +17,12 @@ import com.faculty.eventmanagement.observer.SMSEventObserver;
 import com.faculty.eventmanagement.observer.LogEventObserver;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.module.ResolutionException;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class EventService implements EventSubject {
+public class EventService implements EventSubject, IEventService {
 
     private final EventRepository eventRepository;
     private final RegistrationRepository registrationRepository;
@@ -82,6 +82,7 @@ public class EventService implements EventSubject {
         return saved;
     }
 
+    @Override
     public Event updateEventStatus(Long id, EventStatus newStatus) {
         Event event = getEventById(id);
         event.setStatus(newStatus);

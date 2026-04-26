@@ -1,7 +1,7 @@
 package com.faculty.eventmanagement.controller;
 
 import com.faculty.eventmanagement.model.Event;
-import com.faculty.eventmanagement.services.EventService;
+import com.faculty.eventmanagement.decorator.IEventService;
 import com.faculty.eventmanagement.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -24,7 +24,7 @@ import com.faculty.eventmanagement.serialization.UserSession;
 @RequiredArgsConstructor
 public class EventController {
 
-    private final EventService eventService;
+    private final IEventService eventService;
     private final UserService userService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -52,7 +52,7 @@ public class EventController {
         event.setTitle(title);
         event.setDescription(description);
         event.setLocation(location);
-        event.setEventDate(LocalDateTime.parse(eventDate));
+        event.setEventDate(parsedDate);
         event.setEventType(eventType);
         event.setMaxAttendees(maxAttendees);
 
@@ -119,7 +119,7 @@ public class EventController {
         event.setTitle(title);
         event.setDescription(description);
         event.setLocation(location);
-        event.setEventDate(LocalDateTime.parse(eventDate));
+        event.setEventDate(parsedDate);
         event.setEventType(eventType);
         event.setMaxAttendees(maxAttendees);
 
