@@ -25,6 +25,8 @@ public class UserService {
     private final RegistrationRepository registrationRepository;
     private final SessionManager sessionManager;
 
+    private static final String EMAIL_REGEX = "^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$";
+
     public User createUser(User user) {
         if (user == null) {
             throw new IllegalArgumentException("User details are required.");
@@ -36,6 +38,10 @@ public class UserService {
 
         if (fullName.isEmpty() || email.isEmpty() || password.isEmpty()) {
             throw new IllegalArgumentException("Full name, email and password are required.");
+        }
+
+        if (!email.matches(EMAIL_REGEX)) {
+            throw new IllegalArgumentException("Invalid email format.");
         }
 
         if (userRepository.findByEmail(email).isPresent()) {
@@ -82,6 +88,10 @@ public class UserService {
 
         if (fullName.isEmpty() || email.isEmpty()) {
             throw new IllegalArgumentException("Full name and email are required.");
+        }
+
+        if (!email.matches(EMAIL_REGEX)) {
+            throw new IllegalArgumentException("Invalid email format.");
         }
 
         userRepository.findByEmail(email)
