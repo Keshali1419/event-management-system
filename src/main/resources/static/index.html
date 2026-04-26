@@ -1769,10 +1769,16 @@
 
     async function registerForEvent(eventId, title) {
         try {
-            await fetch(
+            const res = await fetch(
                 `${API}/registrations?userId=${currentUser.id}&eventId=${eventId}`,
                 { method: 'POST' }
             );
+            if (!res.ok){
+                const msg = await res.text();
+                toast(msg, 'error');
+                return;
+            }
+
             toast('Registered for ' + title + '!');
             addNotif('Registration confirmed', 'You registered for: ' + title, '#2d6a4f');
             loadEvents();

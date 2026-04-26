@@ -16,11 +16,15 @@ public class RegistrationController {
     private final RegistrationService registrationService;
 
     @PostMapping
-    public ResponseEntity<Registration> register(
+    public ResponseEntity<?> register(
             @RequestParam Long userId,
             @RequestParam Long eventId) {
-        return ResponseEntity.ok(
-                registrationService.registerUserForEvent(userId, eventId));
+        try {
+            return ResponseEntity.ok(
+                    registrationService.registerUserForEvent(userId, eventId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @GetMapping("/event/{eventId}")
