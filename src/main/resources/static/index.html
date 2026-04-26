@@ -994,12 +994,12 @@
             <table>
                 <thead>
                 <tr>
-                    <th>Title</th><th>Description</th><th>Date</th><th>Time</th>
+                    <th>Image</th><th>Title</th><th>Description</th><th>Date</th><th>Time</th>
                     <th>Location</th><th>Attendees</th><th>Type</th><th>Status</th><th>Action</th>
                 </tr>
                 </thead>
                 <tbody id="eventsTableBody">
-                <tr><td colspan="9" class="empty">Loading…</td></tr>
+                <tr><td colspan="10" class="empty">Loading…</td></tr>
                 </tbody>
             </table>
         </div>
@@ -1020,6 +1020,11 @@
                 <label class="form-label">Description</label>
                 <textarea class="form-input" id="eventDesc" rows="3"
                           placeholder="Describe the event…"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Event image</label>
+                <input class="form-input" id="eventImage" type="file" accept="image/*"/>
+                <div id="imagePreview" style="margin-top:10px"></div>
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -1259,6 +1264,7 @@
     function doLogout() {
         currentUser = null;
         notifs = [];
+        setAdminOnlyVisibility(false);
         document.getElementById('loginEmail').value = '';
         document.getElementById('loginPassword').value = '';
         document.getElementById('mainApp').style.display = 'none';
@@ -1281,6 +1287,7 @@
         const isAdmin = currentUser.role === 'ADMIN';
         syncUserHeader();
         loadEventTypes();
+        setAdminOnlyVisibility(isAdmin);
 
         const links = document.getElementById('navLinks');
         if (isAdmin) {
@@ -1290,7 +1297,6 @@
       <button class="nav-btn" onclick="showPage('manageUsers')">Users</button>
       <button class="nav-btn" onclick="showPage('notifications')">Notifications</button>`;
 
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
             document.getElementById('metric4Label').textContent = 'Event types';
         } else {
             links.innerHTML = `
@@ -1321,6 +1327,14 @@
         if (id === 'manageUsers')     loadUsers();
         if (id === 'profile')         loadProfile();
         if (id === 'myRegistrations') loadMyRegistrations();
+    }
+
+    function setAdminOnlyVisibility(isVisible) {
+        document.querySelectorAll('.admin-only').forEach(el => {
+            el.style.display = isVisible
+                ? (el.tagName === 'BUTTON' ? 'inline-flex' : 'block')
+                : 'none';
+        });
     }
 
     // ── Toast ────────────────────────────────────────────────
@@ -1404,11 +1418,16 @@
 
             const tbody = document.getElementById('eventsTableBody');
             if (!filteredEvents.length) {
-                tbody.innerHTML = '<tr><td colspan="9" class="empty">No events found.</td></tr>';
+                                tbody.innerHTML = '<tr><td colspan="10" class="empty">No events found.</td></tr>';
                 return;
             }
             tbody.innerHTML = filteredEvents.map(e => `
       <tr>
+                <td>
+                    ${e.imageUrl
+                                ? `<img src="${e.imageUrl}" alt="${e.title || 'Event image'}" style="width:72px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--border);display:block"/>`
+                                : '<span style="font-size:11px;color:var(--ink-ghost)">No image</span>'}
+                </td>
         <td style="font-weight:500;color:var(--ink)">${e.title}</td>
         <td style="color:var(--ink-muted)">${e.description || '–'}</td>
         <td>${formatEventDate(e.eventDate)}</td>
@@ -1486,27 +1505,30 @@
         const location = document.getElementById('eventLocation').value.trim();
         const max      = parseInt(document.getElementById('eventMax').value);
         const type     = document.getElementById('eventType').value;
+        const image    = document.getElementById('eventImage').files[0];
 
         if (!title || !date || !location || !max || !type) {
             toast('Please fill in all required fields', 'error'); return;
         }
         try {
             const isEditing = Boolean(editingEventId);
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('description', desc);
+            formData.append('eventDate', date);
+            formData.append('location', location);
+            formData.append('maxAttendees', String(max));
+            formData.append('eventType', type);
+            formData.append('actorUserId', String(currentUser.id));
+            if (image) formData.append('image', image);
+
             const res = await fetch(
                 isEditing
-                    ? `${API}/events/${editingEventId}?actorUserId=${currentUser.id}`
-                    : `${API}/events?actorUserId=${currentUser.id}`,
+                    ? `${API}/events/${editingEventId}`
+                    : `${API}/events`,
                 {
                     method: isEditing ? 'PUT' : 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        title,
-                        description: desc,
-                        eventDate: date,
-                        location,
-                        maxAttendees: max,
-                        eventType: type
-                    })
+                    body: formData
                 }
             );
             if (!res.ok) throw new Error(await res.text());
@@ -1544,6 +1566,12 @@
             await loadEventTypes();
             document.getElementById('eventType').value = existing.eventType || '';
 
+            if (existing.imageUrl) {
+                document.getElementById('imagePreview').innerHTML = `<img src="${existing.imageUrl}" alt="Event image" style="max-width:180px;max-height:120px;object-fit:cover;border-radius:10px;border:1px solid var(--border);"/>`;
+            } else {
+                document.getElementById('imagePreview').innerHTML = '';
+            }
+
             showPage('create');
             toast('Event loaded into form for editing');
         } catch (e) {
@@ -1573,6 +1601,8 @@
     function clearForm() {
         ['eventTitle','eventDesc','eventDate','eventLocation','eventMax','eventType']
             .forEach(id => document.getElementById(id).value = '');
+        document.getElementById('eventImage').value = '';
+        document.getElementById('imagePreview').innerHTML = '';
     }
 
     function cancelEditEvent() {
@@ -1819,8 +1849,12 @@
     function eventCard(e) {
         const pct = e.maxAttendees > 0
             ? Math.round((e.currentAttendees / e.maxAttendees) * 100) : 0;
+                const imageBlock = e.imageUrl
+                        ? `<div style="height:160px;margin:-20px -20px 14px;border-radius:14px 14px 0 0;overflow:hidden;background:#eee"><img src="${e.imageUrl}" alt="${e.title || 'Event image'}" style="width:100%;height:100%;object-fit:cover;display:block"/></div>`
+                        : '';
         return `
     <div class="event-card">
+            ${imageBlock}
       <div class="event-card-top">
         <span class="event-title">${e.title}</span>
         <span class="badge badge-${e.status}">${e.status}</span>
@@ -1862,6 +1896,21 @@
         const pad = n => String(n).padStart(2, '0');
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
     }
+
+    document.getElementById('eventImage')?.addEventListener('change', function (e) {
+        const file = e.target.files && e.target.files[0];
+        const preview = document.getElementById('imagePreview');
+        if (!file) {
+            preview.innerHTML = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (event) {
+            preview.innerHTML = `<img src="${event.target.result}" alt="Preview" style="max-width:180px;max-height:120px;object-fit:cover;border-radius:10px;border:1px solid var(--border);"/>`;
+        };
+        reader.readAsDataURL(file);
+    });
 </script>
 </body>
 </html>
