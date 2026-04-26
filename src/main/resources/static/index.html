@@ -1009,13 +1009,7 @@
                 <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px 18px"
                         onclick="doLogin()">Sign in →</button>
 
-                <div class="test-accounts">
-                    <div class="test-accounts-label">Test accounts</div>
-                    <div class="test-accounts-list">
-                        Admin &nbsp;— admin@faculty.edu / admin123<br>
-                        Student — kasun@faculty.edu / student123
-                    </div>
-                </div>
+                
             </div>
 
             <!-- SIGN UP FORM -->
@@ -1331,6 +1325,8 @@
     const API = 'http://localhost:8080/api';
     let currentUser = null;
     let notifs = [];
+    let adminRegistrationNotifs = [];
+    let adminNotifSnapshot = '';
     let authMode = 'login';
     let eventTypes = [];
     let eventTypeItems = [];
@@ -1519,6 +1515,8 @@
     function doLogout() {
         currentUser = null;
         notifs = [];
+        adminRegistrationNotifs = [];
+        adminNotifSnapshot = '';
         setAdminOnlyVisibility(false);
         document.getElementById('loginEmail').value = '';
         document.getElementById('loginPassword').value = '';
@@ -1582,6 +1580,7 @@
         if (id === 'manageUsers')     loadUsers();
         if (id === 'profile')         loadProfile();
         if (id === 'myRegistrations') loadMyRegistrations();
+        if (id === 'notifications' && currentUser && currentUser.role === 'ADMIN') loadAdminRegistrationNotifications();
     }
 
     function setAdminOnlyVisibility(isVisible) {
@@ -1714,13 +1713,23 @@
         notifs.unshift({ title, desc, color, time: new Date() });
         renderNotifs();
     }
+
+    function getVisibleNotifs() {
+        if (currentUser && currentUser.role === 'ADMIN') {
+            return [...notifs, ...adminRegistrationNotifs]
+                .sort((a, b) => new Date(b.time) - new Date(a.time));
+        }
+        return notifs;
+    }
+
     function renderNotifs() {
         const el = document.getElementById('notifList');
-        if (!notifs.length) {
+        const visible = getVisibleNotifs();
+        if (!visible.length) {
             el.innerHTML = '<div class="empty">No notifications yet.</div>';
             return;
         }
-        el.innerHTML = notifs.map(n => `
+        el.innerHTML = visible.map(n => `
     <div class="notif-item">
       <div class="notif-dot" style="background:${n.color}"></div>
       <div>
@@ -1730,12 +1739,64 @@
       </div>
     </div>`).join('');
     }
-    function clearNotifs() { notifs = []; renderNotifs(); }
+    function clearNotifs() {
+        notifs = [];
+        adminRegistrationNotifs = [];
+        adminNotifSnapshot = '';
+        renderNotifs();
+    }
     function timeAgo(d) {
         const s = Math.floor((new Date() - d) / 1000);
         if (s < 60) return 'just now';
         if (s < 3600) return Math.floor(s/60) + ' min ago';
         return Math.floor(s/3600) + ' hr ago';
+    }
+
+    function roleLabel(role) {
+        return role === 'LECTURER' ? 'Lecturer'
+            : role === 'STUDENT' ? 'Student'
+                : role;
+    }
+
+    async function loadAdminRegistrationNotifications() {
+        if (!currentUser || currentUser.role !== 'ADMIN') return;
+
+        try {
+            const events = await fetch(`${API}/events`).then(r => r.json());
+            const registrationGroups = await Promise.all(
+                events.map(event =>
+                    fetch(`${API}/registrations/event/${event.id}`)
+                        .then(r => r.ok ? r.json() : [])
+                        .catch(() => [])
+                )
+            );
+
+            const allRegistrations = registrationGroups
+                .flat()
+                .filter(r => r && r.user && r.event && r.registeredAt)
+                .sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt));
+
+            const snapshot = allRegistrations
+                .map(r => `${r.id}:${r.registeredAt}`)
+                .join('|');
+
+            if (snapshot === adminNotifSnapshot) {
+                renderNotifs();
+                return;
+            }
+            adminNotifSnapshot = snapshot;
+
+            adminRegistrationNotifs = allRegistrations.slice(0, 30).map(r => ({
+                title: 'New registration',
+                desc: `${roleLabel(r.user.role)} ${r.user.fullName} has registered for: ${r.event.title}`,
+                color: '#2d6a4f',
+                time: new Date(r.registeredAt)
+            }));
+
+            renderNotifs();
+        } catch (e) {
+            console.error(e);
+        }
     }
 
     // ── Dashboard ────────────────────────────────────────────
@@ -1855,8 +1916,17 @@
                 return;
             }
 
-            toast('Registered for ' + title + '!');
-            addNotif('Registration confirmed', 'You registered for: ' + title, '#2d6a4f');
+            const registration = await res.json();
+            const registrantName = registration?.user?.fullName || currentUser.fullName;
+            const registrantRole = roleLabel(registration?.user?.role || currentUser.role);
+            const eventTitle = registration?.event?.title || title;
+
+            toast('Registered for ' + eventTitle + '!');
+            if (currentUser.role === 'ADMIN') {
+                addNotif('New registration', `${registrantRole} ${registrantName} has registered for: ${eventTitle}`, '#2d6a4f');
+            } else {
+                addNotif('Registration confirmed', 'You registered for: ' + eventTitle, '#2d6a4f');
+            }
             loadEvents();
         } catch(e) { toast('Registration failed', 'error'); }
     }
@@ -2078,6 +2148,7 @@
             if (!res.ok) throw new Error(await res.text());
             await loadEventTypes();
             toast('Event type updated');
+            addNotif('Event type updated', `${currentName} was renamed to ${name}.`, '#378ADD');
         } catch (e) { toast(e.message || 'Failed to update event type', 'error'); }
     }
 
@@ -2093,6 +2164,7 @@
             if (!res.ok) throw new Error(await res.text());
             await loadEventTypes();
             toast('Event type deleted');
+            addNotif('Event type deleted', `${name} was removed.`, '#8b1a1a');
         } catch (e) { toast(e.message || 'Failed to delete event type', 'error'); }
     }
 
@@ -2154,6 +2226,7 @@
             const res = await fetch(`${API}/users/${userId}?state=${state}`, { method: 'DELETE' });
             if (!res.ok) throw new Error(await res.text());
             toast('User deleted with state: ' + state);
+            addNotif('User deleted', `User #${userId} deleted with state: ${state}.`, '#8b1a1a');
             loadUsers();
         } catch (e) { toast(e.message || 'Failed to delete user', 'error'); }
     }
